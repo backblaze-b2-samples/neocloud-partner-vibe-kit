@@ -72,6 +72,8 @@ This document materializes the review scope referenced in `docs/known-gaps.md` Â
 - [ ] No credentials in config files in the repo. Config files reference environment variables or secret store paths only.
 - [ ] `.env`, `.env.*`, and similar files are in `.gitignore`.
 - [ ] Operator master key value lives only in the secrets store (e.g., Vault, AWS Secrets Manager).
+- [ ] Operator master key is **never** used as an S3 credential by any tenant or tool. Backblaze does not restrict the master key from the S3 API at the protocol level â€” the restriction is policy you enforce. Verified by `grep` over CI configs, deployment manifests, and S3 client config files.
+- [ ] Tenant S3 client configurations reference a tenant-scoped provider key only. The master key never appears in tenant-facing artifacts.
 - [ ] Per-tenant provider key values live only in the secrets store, keyed by `provider_key_id`.
 - [ ] The platform database has no plaintext credential columns (only IDs and hashes).
 
@@ -218,6 +220,19 @@ This document materializes the review scope referenced in `docs/known-gaps.md` Â
 - [ ] B2 objects themselves are not backed up by this kit; the operator's customer overlay documents the durability assumptions and any cross-region replication strategy (`customer-profile.example-multi-workload.yaml` shows the pattern).
 
 ---
+
+## 10a. S3-Compatible API Surface
+
+- [ ] If tenant-facing S3 access is enabled (`S3_ACCESS_FOR_TENANTS=true`), tenants understand that B2's S3 implementation does not support SSE-KMS, object tagging, IAM roles, object-level ACLs, or browser POST uploads (per `docs/s3-compatible-api.md` Â§Explicitly NOT Supported).
+- [ ] SigV2 client configurations are rejected by SDK config (`signatureVersion: 's3v4'` or equivalent). Verified by a test request from a tenant fixture client.
+- [ ] Provider key capabilities granted to tenants are the minimum needed for their S3 workload. Default set: `listFiles, readFiles, writeFiles, shareFiles` (and optionally `deleteFiles`).
+- [ ] No tenant provider key has `listAllBucketNames`, `listBuckets`, `readAccountInfo`, `writeBuckets`, `deleteBuckets`, or `bypassGovernance`.
+- [ ] `storage_accounts.s3_endpoint` is captured at provisioning time from the Partner API response â€” never inferred from the region code.
+- [ ] If SSE policy is enforced (e.g., SSE-B2 default), bucket-level encryption is set at bucket creation, not at first object upload.
+- [ ] If the workload uses SSE-C, the key MD5 is verified server-side (Backblaze does this by default) and the customer is responsible for key retention.
+- [ ] S3-direct access by tenants is documented as expected for that tenant's overlay; reconciliation drift is not treated as a bug.
+- [ ] If compliance requires per-request access logs, B2 access logging is enabled to a separate audit bucket and ingested into the platform's audit trail.
+- [ ] Tenants using S3 cannot trigger Partner API operations through it. The Partner API is not exposed on the S3 endpoint.
 
 ## 11. Compliance-Specific Items
 

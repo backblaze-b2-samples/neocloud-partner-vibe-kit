@@ -15,6 +15,8 @@ When docs conflict, use this order:
 3. `docs/api-contracts.md` for target neocloud application APIs
 4. `docs/data-model.md` for entities
 5. `docs/provisioning-and-partner-api.md` for Partner API and provider account guidance
+5a. `docs/s3-compatible-api.md` for the S3-compatible API surface, supported operations, and tenant-facing usage
+5b. `docs/adr/008-b2-native-vs-s3-compatible.md` for the decision rationale behind supporting both API surfaces
 6. `docs/upload-data-plane.md` for upload defaults
 7. `docs/small-file-and-throughput-guidance.md` for high-throughput and small-file guidance
 8. `docs/usage-reporting-and-billing.md` for usage attribution and billing
@@ -57,6 +59,7 @@ Customer overlays may not override these without explicit review:
 - No local/frontend counters for billing.
 - Direct B2 listing is not the primary tenant dashboard source.
 - Usage attribution starts with provider account/storage account.
+- Tenants may use the B2 Native API or the S3-compatible API; both are valid against the tenant's customer account. SigV4 only; SSE-KMS, object tagging, IAM roles, and object-level ACLs are not supported by Backblaze's S3 implementation.
 
 ## Configurable defaults
 

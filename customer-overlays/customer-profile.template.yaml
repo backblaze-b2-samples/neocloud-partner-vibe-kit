@@ -69,3 +69,31 @@ partner_api:
   eject_readd_via_partner_api_supported: false
   eject_requires_explicit_confirmation: true
   eject_requires_provider_key_handling: true
+
+# S3-compatible API access for tenants
+#
+# Tenants may use Backblaze's S3-compatible API directly against their
+# provisioned customer account. The same B2 application key works as the
+# AWS-style access key/secret via SigV4. The platform never proxies S3 —
+# tenants connect directly to s3.{region}.backblazeb2.com.
+#
+# See docs/s3-compatible-api.md for the full surface (supported and
+# unsupported operations).
+s3_compatible_api:
+  enabled_for_tenants: true                       # whether tenant-facing docs include the S3 endpoint
+  signature_version: v4                           # SigV4 only; v2 not supported by Backblaze
+  default_encryption_mode: none                   # none | sse-b2 | sse-c
+  presigned_url_max_ttl_seconds: 604800           # 7 days; AWS SDK enforces this max
+  list_objects_reconciliation_enabled: false      # if true, periodic job lists buckets via S3 to backfill objects table
+  unsupported_features_acknowledged_by_tenants:
+    - sse_kms
+    - object_tagging
+    - iam_roles
+    - sigv2
+    - website_configuration
+    - browser_post_uploads_to_presigned_urls
+    - object_level_acls
+  # NEVER use the operator master key as an S3 credential. Backblaze does
+  # not restrict this at the protocol level — the restriction is platform
+  # policy. The master key is loaded only by the platform's control plane.
+  master_key_must_not_be_used_as_s3_credential: true

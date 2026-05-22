@@ -121,6 +121,17 @@ B2 object keys are B2 file names. Slashes are part of the file name, not real di
    the same leading range — a hot spot at scale.
 ```
 
+## Dual API surfaces
+
+Backblaze exposes two HTTP API surfaces against the same data:
+
+- **B2 Native API + Partner API** — purpose-built for B2, plus customer account/Group management. The platform uses this for control plane and platform-mediated data plane.
+- **S3-compatible API** — AWS S3 protocol subset, SigV4 auth, exposed at `https://s3.{region}.backblazeb2.com/`. Tenants may use this directly against their customer account using the same B2 application key as the AWS-style credential.
+
+The platform never proxies S3 — tenants who want S3 connect directly to Backblaze. The platform records the per-account S3 endpoint in `storage_accounts.s3_endpoint` so tenants can be told where to point their S3 client.
+
+See `docs/s3-compatible-api.md` for the full S3 surface, and `docs/adr/008-b2-native-vs-s3-compatible.md` for the decision rationale.
+
 ## Control plane vs data plane
 
 ```text

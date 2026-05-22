@@ -353,6 +353,107 @@ customer-acme/run-2026-05-21/file.bin
 
 ---
 
+## 19. Using SigV2 Against B2's S3-Compatible API
+
+**Wrong**
+- Configuring an S3 client to sign requests with AWS Signature Version 2.
+- Using legacy S3 tools that default to SigV2 without checking.
+
+**Why wrong**
+- Backblaze's S3-compatible API accepts SigV4 only. SigV2 requests are rejected.
+
+**Right**
+- Force SigV4 in the client (`signatureVersion: 's3v4'` in boto3; AWS SDK default in current versions).
+- Verify with a test request before deploying.
+
+**References:** `docs/s3-compatible-api.md` §Authentication.
+
+---
+
+## 20. Expecting SSE-KMS, Object Tagging, or IAM Roles on B2's S3 API
+
+**Wrong**
+- Designing a workflow that depends on `PutObjectTagging` / `GetObjectTagging`.
+- Configuring a bucket with SSE-KMS via `PutBucketEncryption`.
+- Using `AssumeRole` / STS to issue scoped S3 credentials.
+- Setting object-level ACLs.
+
+**Why wrong**
+- Backblaze documents these as not supported:
+  - SSE-KMS — use SSE-B2 or SSE-C instead.
+  - Object Tagging — returns empty.
+  - IAM roles / STS — no analog; use B2 application keys directly.
+  - Object-level ACLs — return 403; objects inherit bucket ACL.
+
+**Right**
+- For encryption: use SSE-B2 (Backblaze-managed) or SSE-C (customer-managed).
+- For credential scoping: provision a B2 application key with the minimum capability set.
+- For access metadata: store in your own database, not as object tags.
+
+**References:** `docs/s3-compatible-api.md` §Explicitly NOT Supported, `docs/known-gaps.md` §12.
+
+---
+
+## 21. Confusing Partner API Region Code with S3 Endpoint Label
+
+**Wrong**
+- Storing `us-west-004` in `storage_accounts.region` and sending it to `b2_create_group_member`.
+- Storing `us-west` in `storage_accounts.s3_endpoint` and using it as a URL host.
+
+**Why wrong**
+- Partner API regions and S3 endpoint labels are different values:
+  - Partner API region (in `b2_create_group_member`): `us-east`, `us-west`, `ca-east`, `eu-central`.
+  - S3 endpoint label (in the URL): `us-east-005`, `us-west-004`, `eu-central-003`.
+- Passing one where the other is expected produces hard-to-debug errors (provisioning fails or S3 requests go to the wrong host).
+
+**Right**
+- Use the Partner API region code in `storage_accounts.region` (sent to `b2_create_group_member`).
+- Use the S3 endpoint label (or full URL) in `storage_accounts.s3_endpoint` (used by S3 clients).
+- Capture both at provisioning time from the Partner API response; do not infer one from the other.
+
+**References:** `docs/s3-compatible-api.md` §Region Values, `docs/provisioning-and-partner-api.md` §Regional customer accounts.
+
+---
+
+## 22. Computing Billing from `usage_events` When Tenants Use the S3 API Directly
+
+**Wrong**
+- Adding up `usage_events` rows for the period and calling that the tenant's bill.
+- Assuming `usage_events` is complete for any tenant.
+
+**Why wrong**
+- `usage_events` records platform-mediated operations only. When a tenant uses the S3-compatible API directly against B2, those operations never touch the platform and never write `usage_events`.
+- Bill the tenant from `usage_events` and you under-bill S3-heavy tenants.
+
+**Right**
+- Bill from `usage_import_rows` / `billing_ledger`, which derive from B2's daily CSV. The CSV covers every operation regardless of which API surfaced it.
+- Use `usage_events` for reconciliation (detect drift) and for real-time tenant dashboards (best-effort live view), not for invoicing.
+
+**References:** `docs/usage-reporting-and-billing.md`, `docs/s3-compatible-api.md` §Operational Considerations for S3 Tenants, `docs/adr/003-provider-account-first-usage-attribution.md`.
+
+---
+
+## 23. Using the Operator Master Key as an S3 Credential
+
+**Wrong**
+- Pasting the operator's master `applicationKeyId` / `applicationKey` into a boto3 config or `.aws/credentials` to "quickly test" an S3 workflow.
+- Letting an internal tool use the master key for S3 access because it's already loaded in the environment.
+- Handing the master key to a tenant for "convenience" instead of provisioning a scoped tenant key.
+
+**Why wrong**
+- Backblaze does not restrict the master key from the S3 API — it has full account-level capabilities across every provisioned customer account. A leak on S3 (config files, environment, CI logs) exposes the entire platform.
+- The master key is the only credential with Partner API access. Compromise of the master key means a third party can provision, eject, or modify any customer account.
+- Even one-off testing leaves the key in shell history, system clipboards, or local config files.
+
+**Right**
+- The master key is loaded only by the platform's control plane, behind the `NeocloudStorageProvider` abstraction. No tenant code path and no ad-hoc script loads it.
+- For operator-side S3 testing, provision a separate operator-scoped key (with the minimum capabilities needed for the test) and use that.
+- For tenant workloads, provision a tenant-scoped provider key with the minimum capability set (`listFiles, readFiles, writeFiles, shareFiles`, plus `deleteFiles` only if needed).
+
+**References:** `docs/security-and-tenant-isolation.md` §Operator master key, `docs/s3-compatible-api.md` §Never Use the Operator Master Key as an S3 Credential, `CLAUDE.md` §Golden rules.
+
+---
+
 ## Using This Doc in PR Review
 
 When reviewing a PR, scan this list. If the PR pattern matches any **Wrong** example, request changes before approving. The **References** column tells you where the canonical guidance lives so you can quote it in the review comment.

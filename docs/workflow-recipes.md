@@ -43,3 +43,11 @@ Use PRs 8 and 9. No portal is required. Include existing Group selection/linking
 ## Multi-region customer
 
 Create multiple B2 customer accounts/sub-accounts for the customer, one per required pre-defined region. Metadata maps the tenant to multiple storage accounts. Reporting aggregates across storage accounts when needed.
+
+## S3-compatible client workflow
+
+For tenants whose tooling already speaks S3 (boto3, AWS CLI, Rclone, Cyberduck, MinIO mc, S3-aware analytics pipelines), provision the tenant as normal (`POST /admin/tenants`) and then expose three values to the tenant: the `s3_endpoint` host (e.g., `s3.us-west-004.backblazeb2.com`), the `applicationKeyId` (used as the AWS access key), and the `applicationKey` (used as the AWS secret, returned exactly once at key creation). The tenant configures their S3 client with these values using SigV4 auth. Do not provision a separate AWS-style credential — the same B2 provider key works for both API surfaces. Document the unsupported S3 features (SSE-KMS, object tagging, IAM roles, object-level ACLs) in the tenant's onboarding materials. The operator master key must never appear in a tenant's S3 config. See `docs/s3-compatible-api.md`.
+
+## Inference serving with S3 + CDN cache
+
+For workloads that load model artifacts at inference time: use S3-compatible API for the model retrieval path (most ML serving frameworks expect S3 semantics) and place a CDN or per-node cache in front of B2 to handle first-byte latency. The platform records the per-account `s3_endpoint` so inference servers can be configured directly. Cache hit rate becomes a separate operational concern outside the kit. See `customer-overlays/customer-profile.example-multi-workload.yaml` for a complete worked example.

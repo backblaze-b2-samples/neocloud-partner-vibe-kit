@@ -14,6 +14,7 @@ For canonical entity definitions (columns, relationships), see `docs/data-model.
 - **Append-only** — Property of `audit_events`, `usage_events`, and `usage_import_rows` tables: rows are inserted but never updated or deleted. Enforced at the schema/permission layer.
 - **Attribution (usage attribution)** — Mapping a row in a B2 usage CSV to a tenant. Order: provider customer account ID → storage account → bucket ID/name → internal metadata → unattributed row for review.
 - **Audit event** — Row in the `audit_events` table recording a state-changing operation. Columns include `event_type`, `actor_id`, `resource_type`, `resource_id`, `occurred_at`, and `metadata`.
+- **AWS SigV4** — AWS Signature Version 4 authentication. The only auth scheme Backblaze's S3-compatible API accepts. The tenant's B2 `applicationKeyId` becomes the access key; `applicationKey` becomes the secret. SigV2 is not supported.
 
 ## B
 
@@ -78,8 +79,9 @@ For canonical entity definitions (columns, relationships), see `docs/data-model.
 ## P
 
 - **Partner API** — Backblaze API surface for provisioning customer accounts within Groups (`b2_create_group_member`, `b2_eject_group_member`, etc.). Must be enabled by Backblaze on the operator account; not self-service.
+- **Path-style URL** — S3 URL form `https://s3.{region}.backblazeb2.com/{bucket}/{key}`. Supported by Backblaze. Contrast with virtual-hosted-style.
 - **Physical B2 file name** — The actual B2 file name written to a bucket. Generated using the distribution-first layout: `objects/{distribution_id}/tenants/{tenant_id}/projects/{project_id}/{object_id}/{safe_filename}`. Stored in `objects.physical_b2_file_name`.
-- **Presigned URL** — Time-limited B2 download URL produced via `b2_get_download_authorization`. Used to grant temporary access without exposing platform credentials.
+- **Presigned URL** — Time-limited download URL. Two flavors: B2 Native (produced via `b2_get_download_authorization`, used by the platform's `POST .../presign` endpoint) and S3-style (produced client-side via the AWS SDK's `generate_presigned_url` using the tenant's B2 key as the AWS credential).
 - **Project** — Tenant-internal grouping of objects, with its own `quota_policy` and `storage_policy`. Not a B2 concept; an application-level metadata boundary.
 - **Provider error** — HTTP error response from B2. Categorized in metrics by status code (401, 403, 429, 503, etc.) for alerting.
 - **Provider key** — B2 application key created inside a provisioned customer account. Distinct from a platform API key. Stored in `provider_keys` with metadata (no key value).
@@ -98,10 +100,16 @@ For canonical entity definitions (columns, relationships), see `docs/data-model.
 
 ## S
 
-- **S3 endpoint** — B2 S3-compatible cluster URL such as `s3.us-west-004.backblazeb2.com`. Stored in `storage_accounts.s3_endpoint`. Do not confuse with the Partner API region code.
+- **S3-compatible API** — Backblaze's AWS S3-protocol-compatible endpoint, exposed at `https://s3.{region}.backblazeb2.com/`. Authenticated via AWS SigV4 using B2 application keys directly. See `docs/s3-compatible-api.md` for supported operations and limitations.
+- **S3 endpoint (label)** — B2 S3-compatible host such as `s3.us-west-004.backblazeb2.com`. The full URL including the host. Stored in `storage_accounts.s3_endpoint`. Do not confuse with the Partner API region code.
+- **S3 endpoint label (region)** — The middle component of an S3 endpoint URL (e.g., `us-west-004`, `us-east-005`, `eu-central-003`). Distinct from the Partner API region code (e.g., `us-west`).
 - **Safe filename** — Sanitized version of the user-supplied filename, suitable for inclusion as the last component of a physical B2 file name. Stored in `objects.safe_filename`.
 - **Service account** — Programmatic identity inside a tenant. Holds platform API keys, not provider keys.
+- **SigV2** — Older AWS Signature Version 2. **Not supported** by Backblaze's S3-compatible API. Use SigV4 only.
 - **Source of truth** — The canonical authority for a given topic. Defined in `docs/source-of-truth.md`. Postman and the original starter kit are not sources of truth.
+- **SSE-B2** — Server-side encryption with Backblaze-managed keys. Set per-bucket or per-request. The default recommendation when encryption at rest is required without customer key management.
+- **SSE-C** — Server-side encryption with customer-managed keys. The customer supplies the key per request via `x-amz-server-side-encryption-customer-*` headers. The `keyMd5` variable in the S3 Postman environment maps to the MD5 header.
+- **SSE-KMS** — AWS KMS-managed server-side encryption. **Not supported** by Backblaze. Workloads requiring SSE-KMS must use SSE-B2 or SSE-C instead.
 - **Storage account** — `storage_accounts` row. Represents one Backblaze customer account/sub-account in one region for one tenant. A tenant may have multiple storage accounts for multi-region needs.
 - **Suspend (tenant suspension)** — Local/composite operation that disables tenant access and revokes tenant provider keys. Reversible via reactivate. Does not call Partner API eject.
 
@@ -121,3 +129,4 @@ For canonical entity definitions (columns, relationships), see `docs/data-model.
 ## V
 
 - **Vibe Coding Starter Kit (original)** — The simple B2 upload/list/download starter referenced in `docs/reuse-from-original-vibe-kit.md`. Useful for developer-experience reference only. Not the source of truth for neocloud architecture.
+- **Virtual-hosted-style URL** — S3 URL form `https://{bucket}.s3.{region}.backblazeb2.com/{key}`. Supported by Backblaze. The default for most modern AWS SDKs. Requires a DNS-compatible bucket name (the kit's bucket naming pattern is DNS-compatible by construction).

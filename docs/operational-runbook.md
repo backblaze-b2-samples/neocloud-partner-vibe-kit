@@ -325,6 +325,39 @@ Quota policy is configured at the project level (`projects.quota_policy`) in the
 
 ---
 
+## 12a. S3-Compatible API Issues
+
+The S3 API is consumed by tenants directly against B2 — the platform does not proxy these requests. Most S3 issues are debugged in the tenant's client, not in the platform. The runbook items below are for cases where the platform is implicated.
+
+### Symptoms
+- Tenant reports 403 on every S3 request.
+- Tenant reports SignatureDoesNotMatch errors.
+- Reconciliation job shows a persistent delta between `usage_events` and `usage_import_rows` for one tenant.
+- `objects` table is missing rows the tenant claims to have uploaded.
+
+### Investigate
+1. **403 on every request:** The tenant's `provider_keys` row is `revoked` or `rotation_pending_delete`. Confirm key status. If the tenant rotated keys outside the platform, the database state may be stale — re-sync.
+2. **SignatureDoesNotMatch:** Almost always one of:
+   - Client using SigV2. B2 requires SigV4. Confirm SDK version.
+   - Client clock skew > 15 minutes. Confirm NTP on the tenant's host.
+   - Client using the wrong region in the signing string. Compare against `storage_accounts.s3_endpoint`.
+   - Client URL-encoding `+` differently than the signing canonicalization expects (most modern SDKs handle this, but custom clients can get it wrong).
+3. **Reconciliation delta:** Expected behavior for S3-heavy tenants. `usage_events` records platform-mediated operations only; direct S3 access only appears in `usage_import_rows`. Document the expected delta in the customer overlay's `notes:` and confirm the alert threshold is tuned accordingly.
+4. **Missing `objects` rows:** Tenant uploaded via S3 without notifying the platform. The platform's `objects` table is not the source of truth for B2 reality. Either (a) enable `S3_RECONCILIATION_LIST_OBJECTS_ENABLED` to backfill from B2 listings, or (b) accept that the table is incomplete for S3-direct workloads and treat per-account usage attribution as authoritative.
+
+### Remediate
+- **Revoked key:** If the revocation was intentional, instruct the tenant to retrieve a new key via the platform. If unintentional, see Section 7 (key rotation).
+- **SignatureDoesNotMatch:** Direct the tenant to verify SigV4 and clock. If the platform's `storage_accounts.s3_endpoint` is wrong, fix it (provisioning bug) and notify the tenant.
+- **Reconciliation delta:** No remediation needed if the customer overlay documents direct S3 usage. If unexpected, the tenant may be using a leaked credential — rotate immediately (Section 7 emergency revocation).
+- **Object metadata gap:** Run the optional reconciliation list-objects job, or document the limitation in the operational notes.
+
+### Prevent
+- Surface `s3_endpoint` in the tenant portal so tenants can paste the correct value into their S3 SDK config.
+- Document the supported S3 operations in tenant-facing materials (`docs/s3-compatible-api.md` §Supported S3 Operations and §Explicitly NOT Supported).
+- Monitor SigV4 401/403 rate per-tenant. A spike on one tenant indicates a config error on their side; a spike across many tenants indicates a platform-side problem (revoked operator key, clock skew on the platform host).
+
+---
+
 ## 12. Regional Account Reporting Issues
 
 **Symptoms**

@@ -28,5 +28,18 @@
 | Billing | export from ledger | deterministic | unit/integration | P1 |
 | Postman | corrected collection JSON validates | valid JSON | static | P0 |
 | Postman | b2-native env includes collection variables | all variables represented | static | P0 |
+| Postman | S3-compatible collection JSON validates | valid JSON | static | P0 |
+| Postman | s3-example env includes collection variables (applicationKeyId, applicationKey, region, keyMd5) | all variables represented | static | P0 |
+| S3 API | tenant provider key works as AWS SigV4 credential against `s3.{region}.backblazeb2.com` | authenticated request succeeds | integration/mock | P0 |
+| S3 API | SigV2 request rejected | 4xx error returned | integration/mock | P1 |
+| S3 API | master application key never used as S3 credential by any tenant code path | grep over CI/configs/test fixtures returns empty | static/security | P0 |
+| S3 API | tenant uses S3 directly to upload object | object appears in `usage_import_rows` after next CSV ingest | integration/mock | P0 |
+| S3 API | tenant uses S3 directly to upload object | object does NOT appear in `usage_events` until optional list-reconciliation runs | integration/mock | P1 |
+| S3 API | reconciliation job reports a non-zero delta for S3-direct workloads | delta is reported, not zero, not error | integration | P1 |
+| S3 API | provisioning captures `s3_endpoint` on `storage_accounts` row | endpoint host stored, region label distinguishable from Partner API region code | integration/mock | P0 |
+| S3 API | S3 multipart upload succeeds against tenant bucket | object created with same physical bytes as B2 Native equivalent | integration/mock | P1 |
+| S3 API | SSE-KMS request rejected with a clear error | unsupported feature surfaced to caller | integration/mock | P1 |
+| S3 API | object-level ACL set request returns 403 | platform documents this as unsupported | integration/mock | P1 |
+| S3 API | object tagging operations return empty / unsupported | platform documents this as unsupported | integration/mock | P1 |
 | Portal | file browser uses metadata | no direct B2 listing as primary source | integration/ui | P1 |
 | Quality gates | customer overlay does not override invariants | conflict flagged | unit/doc | P1 |

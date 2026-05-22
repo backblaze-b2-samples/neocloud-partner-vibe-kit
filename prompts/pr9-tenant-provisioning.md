@@ -17,6 +17,10 @@ Implement Group-aware tenant provisioning with existing Backblaze Groups, custom
 
 Partner API enablement prerequisite, Groups website prerequisite, existing Group selection/linking, account create/eject, alias-to-memberEmail mapping, bucket/key child workflows, audited provisioning, and explicit eject warnings.
 
+The provisioning response must capture and persist the S3 endpoint host returned by the Partner API on each `storage_accounts` row (column: `s3_endpoint`). This value is what tenants need to configure S3 clients. The Partner API region code and the S3 endpoint label are different values — store both. See `docs/s3-compatible-api.md` §Region Values.
+
+Tenants receive a single provider key per workload that works for both B2 Native and S3-compatible API access. Do not provision a separate AWS-style credential. The provider key capability set follows the minimum-privilege list in `CLAUDE.md` §Key Capabilities Reference. The operator master key must not be exposed in any tenant-facing response or used as a tenant's S3 credential.
+
 ## Non-goals
 
 - Do not implement unrelated roadmap phases.
@@ -44,6 +48,9 @@ Partner API enablement prerequisite, Groups website prerequisite, existing Group
 - Partner API eject is not used for normal suspend/reactivate
 - eject requires explicit operator confirmation and warns that Partner API re-add is not supported
 - provisioning audited
+- `storage_accounts.s3_endpoint` is captured at provisioning time and distinguishable from the Partner API region code
+- tenant provisioning response surfaces the S3 endpoint along with the B2 Native API URL — tenant is informed of both API surfaces
+- the operator master key is not returned in any provisioning response and is not stored on any tenant-facing record
 
 ## After editing
 

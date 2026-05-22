@@ -60,6 +60,12 @@ Individual small objects are reasonable for low-volume workflows, human-uploaded
 
 If a customer uploads tiny records as individual objects and the workload becomes request-bound, prefer packing records into larger objects with a manifest and range reads, or store very small metadata in a database when object storage is not the right access pattern.
 
+## S3 small-file considerations
+
+The throughput characteristics are the same whether a tenant uses the B2 Native API or the S3-compatible API. The 5 MB minimum part size, 5 GB maximum, 10,000 maximum parts apply equally. S3 clients tend to default to smaller part sizes (8 MB in some AWS SDK versions) — tune the SDK's multipart settings if very large transfers underperform.
+
+S3 does not change the recommendation to pack small files. Tenants doing high-volume small-file workflows over S3 should still pack into segment objects with manifests and use S3 Range reads (`Range: bytes=N-M`) to retrieve individual records. The packing logic lives in the tenant's application; the platform's manifest schema (`packed_object_manifests`, `packed_object_entries`) is independent of which API surface the tenant uses to write the segments.
+
 ## B2 file-name distribution reminder
 
 Packed objects and normal objects should still use B2 file-name distribution across the lexicographical keyspace for high-scale generated names.

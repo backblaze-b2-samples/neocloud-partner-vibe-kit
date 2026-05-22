@@ -19,8 +19,6 @@ The kit has two layers:
 
 The original Vibe Coding Starter Kit is useful for developer experience, local setup, simple B2 API examples, and basic UI patterns. The Neocloud Vibe Kit tells Claude and engineers how to build a real neocloud foundation: account/sub-account tenant isolation, high-throughput uploads, provisioning, usage reporting, billing/chargeback, audit logs, and operations.
 
-Use the original kit for polish and examples. Do not reuse its simple-app architecture.
-
 ## Canonical implementation roadmap
 
 1. PR 1 — Foundation and data model
@@ -83,6 +81,7 @@ neocloud-vibe-kit/
 │   ├── api-contracts.md                   # target neocloud application API
 │   ├── data-model.md                      # canonical entities and columns
 │   ├── provisioning-and-partner-api.md    # tenant lifecycle and Partner API
+│   ├── s3-compatible-api.md               # S3 API surface, supported ops, auth
 │   ├── upload-data-plane.md               # upload flows, concurrency, retry
 │   ├── usage-reporting-and-billing.md     # CSV ingestion, attribution, billing
 │   ├── security-and-tenant-isolation.md   # isolation model and key scoping
@@ -108,7 +107,8 @@ neocloud-vibe-kit/
 │       ├── 004-multipart-upload-defaults.md
 │       ├── 005-postman-is-reference-not-source-of-truth.md
 │       ├── 006-high-throughput-not-high-iops.md
-│       └── 007-partner-api-enablements-and-regional-accounts.md
+│       ├── 007-partner-api-enablements-and-regional-accounts.md
+│       └── 008-b2-native-vs-s3-compatible.md
 ├── prompts/                               # one canonical prompt per PR
 │   ├── README.md
 │   ├── pr1-foundation.md
@@ -130,8 +130,11 @@ neocloud-vibe-kit/
 └── postman/                               # B2 Native API reference collection
     ├── README.md
     ├── Backblaze_B2_Postman_Collection_CORRECTED_v3.json
+    ├── Backblaze B2 Cloud Storage S3 Compatible API.postman_collection.json
     ├── b2-native-example.postman_environment.json
     ├── b2-native-local.postman_environment.json
+    ├── s3-example.postman_environment.json
+    ├── s3-local.postman_environment.json
     ├── neocloud-example.postman_environment.json
     └── neocloud-local.postman_environment.json
 ```
@@ -142,4 +145,10 @@ Use `customer-overlays/customer-profile.template.yaml` to customize workflow cho
 
 ## Postman status
 
-`postman/Backblaze_B2_Postman_Collection_CORRECTED_v3.json` is a candidate B2 Native API reference collection. It is not the target neocloud application API contract. Use `docs/api-contracts.md` for target platform APIs.
+Backblaze exposes three distinct API surfaces relevant to neocloud:
+
+- **B2 Native API** — Backblaze's native HTTP API for authorization, buckets, application keys, uploads, downloads, and file metadata. The included Postman collection (`postman/Backblaze_B2_Postman_Collection_CORRECTED_v3.json`) covers this surface.
+- **Partner API** — Programmatic provisioning of customer accounts within Backblaze Groups (`b2_create_group_member`, `b2_eject_group_member`, `b2_list_groups`, `b2_list_group_members`). Partner API operations live on the same base URL as the B2 Native API and are included as a request group inside the same collection. See `docs/provisioning-and-partner-api.md` for the flow.
+- **S3-compatible API** — Backblaze's S3 protocol endpoints (e.g., `s3.us-west-004.backblazeb2.com`). Covered by `postman/Backblaze B2 Cloud Storage S3 Compatible API.postman_collection.json` (34 requests across Bucket and Object Operations, AWS SigV4 auth). Use `postman/s3-example.postman_environment.json` or `postman/s3-local.postman_environment.json`. The `storage_accounts.s3_endpoint` column records the S3 endpoint for each customer account.
+
+The Postman collection is a **candidate reference** for the B2 and Partner API surfaces, pending live-environment review. It is not the target neocloud application API contract — for that, use `docs/api-contracts.md`.

@@ -8,6 +8,8 @@
 - B2 file-name distribution is not an authorization mechanism.
 - Admin actions are audited.
 - Denied access is logged without leaking sensitive details.
+- **Least privilege everywhere.** Every credential — platform API key, provider key, tenant-facing S3 access — is scoped to the minimum capabilities required for its workload.
+- **The operator master application key is for the platform's control plane only.** It must never be used as a tenant credential, exposed to tenants, or configured into a tenant's S3 client. The isolation boundary is the same for B2 Native and S3-compatible APIs.
 
 ## Roles
 
@@ -37,6 +39,30 @@ Default layout:
 ## Key scoping
 
 Create B2 application keys inside the tenant's provisioned B2 customer account/sub-account and, where appropriate, scope them to specific buckets or B2 file-name scopes required by the workload. Store provider key metadata; store secrets only in an approved secret store.
+
+### Operator master key
+
+The operator master key has full Partner API access and account-level capabilities across every provisioned customer account. It must be treated as the highest-privilege credential in the platform:
+
+- **Used by the platform's control plane only.** No tenant-facing code path may load or invoke the master key.
+- **Never used as an S3 credential for tenant workloads.** Backblaze does not restrict the master key from the S3 API — the restriction is a policy you enforce. The master key must not appear in any S3 client configuration.
+- **Stored in the secrets store only.** Never in source, config files, environment files committed to the repo, or anywhere a tenant could reach it.
+- **Rotated on a defined schedule** (default: 90 days; see `docs/configuration-reference.md` §15).
+- **Used only over HTTPS** against B2 endpoints. No direct API access from tenant-network code paths.
+
+If you are tempted to use the master key for an ad-hoc operation, that operation belongs in the platform's control plane (under `provider.*` methods that wrap the master credential), not in a script.
+
+### Tenant provider keys
+
+Tenant provider keys are created inside the tenant's customer account with the minimum capability set for the workload. The default capability set is:
+
+```
+listFiles, readFiles, writeFiles, shareFiles
+```
+
+Add `deleteFiles` only if the workload requires tenant-initiated deletion. Never grant tenant keys: `listBuckets`, `listAllBucketNames`, `deleteBuckets`, `writeBuckets`, `readAccountInfo`, `bypassGovernance`.
+
+The same provider key works for both B2 Native and S3-compatible API access — `applicationKeyId` becomes the AWS access key and `applicationKey` becomes the AWS secret. The capabilities granted constrain both surfaces identically.
 
 ## Required audit events
 

@@ -62,6 +62,8 @@ These docs are not tied to one PR. Read them when the task calls for them.
 | Common mistakes to avoid | `docs/common-pitfalls.md` |
 | Setting up the platform for the first time | `docs/first-time-operator-setup.md` |
 | Pre-production security review | `docs/security-review-checklist.md` |
+| S3-compatible API surface (supported ops, auth, endpoints) | `docs/s3-compatible-api.md` |
+| Why both B2 Native and S3 are supported | `docs/adr/008-b2-native-vs-s3-compatible.md` |
 | A step-by-step recipe for a common task | `docs/workflow-recipes.md` |
 | A rationale for a major design decision | `docs/adr/` |
 

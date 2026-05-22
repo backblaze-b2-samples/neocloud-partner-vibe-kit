@@ -160,7 +160,23 @@ The kit does not implement:
 
 ---
 
-## 13. Documentation-Implementation Drift Risk
+## 13a. S3-Compatible API Limitations
+
+Backblaze's S3-compatible API implements the most commonly used subset of AWS S3, not the full surface. Workloads that depend on the following will NOT work via S3:
+
+- SSE-KMS encryption — use SSE-B2 or SSE-C instead.
+- Object tagging (`PutObjectTagging` / `GetObjectTagging`).
+- IAM roles, STS, `AssumeRole`. Use B2 application keys directly.
+- Website configuration / static website hosting.
+- Browser-based POST uploads to presigned URLs.
+- Object-level ACLs (objects inherit bucket ACL).
+- SigV2 authentication — SigV4 only.
+
+These are limitations of B2's S3 implementation, not the kit. They are documented for tenants in `docs/s3-compatible-api.md` §Explicitly NOT Supported.
+
+The platform does not work around these — workloads that strictly require an unsupported feature should use the B2 Native API or a different storage backend.
+
+## 14. Documentation-Implementation Drift Risk
 
 Because the kit is documentation-only, there is no compiler or test suite to catch divergence between docs and code. As implementation begins, docs may drift from reality unless actively maintained.
 

@@ -26,6 +26,16 @@ Event types include:
 
 Usage events are append-only. Do not use frontend or local JSON counters for billing.
 
+## S3-compatible API usage in the CSV
+
+B2's daily and monthly usage CSV records every operation regardless of which API surfaced it. Operations against the S3-compatible endpoint appear with the same Account ID and Bucket Name columns as B2 Native operations — there is no separate column distinguishing "S3" vs "Native" usage.
+
+This means:
+
+- `usage_import_rows` is the complete billing source of truth for both API surfaces.
+- `usage_events` (platform-mediated) is incomplete for tenants who use S3 directly. Treat it as the platform's view, not the billing source.
+- The reconciliation job will show a persistent delta for S3-heavy tenants. Document the expected delta in the customer overlay's `notes:`.
+
 ## Provider CSV attribution
 
 Usage attribution starts with provider account/storage account first, then bucket ID or bucket name, then internal bucket/project/object metadata. Bucket name alone is not a reliable tenant identifier.

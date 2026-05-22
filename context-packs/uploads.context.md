@@ -20,5 +20,10 @@ Parallel, resilient, high-throughput uploads.
 - Use shared B2 file-name builder.
 - Avoid excessive tiny-object amplification when practical.
 
+## Two API surfaces
+- Platform-mediated uploads use the B2 Native Large File API; the platform records `usage_events` and `audit_events`.
+- Tenants may also upload via the S3-compatible API directly (`s3.{region}.backblazeb2.com`, SigV4, same B2 application key). Same multipart part-size rules apply. The platform does not see these uploads — `usage_events` is incomplete; `usage_import_rows` from the daily B2 CSV is the billing source of truth.
+- See `docs/s3-compatible-api.md` when the task touches S3 multipart, S3 presigned URLs, or tenant-facing S3 client config.
+
 ## Tests
-Concurrency, retry, abort, thresholds, file-name builder, small-file policy.
+Concurrency, retry, abort, thresholds, file-name builder, small-file policy. For S3: SigV4 auth, master key never used as S3 credential.

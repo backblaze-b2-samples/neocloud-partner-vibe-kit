@@ -18,6 +18,12 @@ source_of_truth_for:
 - Safe cleanup.
 - Metadata-based authorization.
 
+## Two API surfaces for uploads
+
+Tenants may upload through either the platform's data plane (which uses the B2 Native Large File API under the hood) or directly to B2 via the S3-compatible API (using S3 multipart). Both produce the same underlying B2 object. The platform-mediated flow gives the platform durable visibility into upload sessions and writes `usage_events` rows; direct S3 access bypasses both.
+
+See `docs/s3-compatible-api.md` for the S3 alternative, including the equivalent S3 multipart operations and their part-size requirements (5 MB minimum, 5 GB max, 10,000 max parts — identical to B2 Native). The defaults below describe the platform-mediated flow.
+
 ## Decision tree
 
 - Files smaller than 100 MB use normal single-object upload.

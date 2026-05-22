@@ -202,6 +202,25 @@ partner_api:
   eject_requires_explicit_confirmation: true
   eject_requires_provider_key_handling: true
 
+s3_compatible_api:
+  # Inference clients are commonly S3-aware; enable S3 surface for tenants.
+  enabled_for_tenants: true
+  signature_version: v4
+  default_encryption_mode: sse-b2                 # encrypt at rest for all production models and DR data
+  presigned_url_max_ttl_seconds: 3600             # 1 hour — inference clients re-fetch presigned URLs as needed
+  list_objects_reconciliation_enabled: true       # objects table is authoritative for billing/inventory
+  unsupported_features_acknowledged_by_tenants:
+    - sse_kms
+    - object_tagging
+    - iam_roles
+    - sigv2
+    - website_configuration
+    - browser_post_uploads_to_presigned_urls
+    - object_level_acls
+  master_key_must_not_be_used_as_s3_credential: true
+  # Inference servers configured with the per-tenant provider key.
+  # See docs/s3-compatible-api.md and docs/operational-runbook.md §12a.
+
 operational:
   stale_upload_cleanup_interval_seconds: 1800   # 30 min — large training uploads take long
   reconciliation_interval_seconds: 43200        # twice daily — DR drift detection matters

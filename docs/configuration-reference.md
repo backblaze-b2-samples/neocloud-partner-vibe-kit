@@ -87,9 +87,23 @@ The Partner API region code (`storage_accounts.region`) is **not** an S3 endpoin
 | Setting | Example Value | Purpose |
 |---|---|---|
 | Partner API region | `us-east`, `us-west`, `ca-east`, `eu-central` | Used in `b2_create_group_member` |
-| S3 endpoint | `s3.us-west-004.backblazeb2.com` | Stored on `storage_accounts.s3_endpoint`; used by S3-compatible clients |
+| S3 endpoint host | `s3.us-west-004.backblazeb2.com` | Stored on `storage_accounts.s3_endpoint`; used by S3-compatible clients |
+| S3 endpoint label | `us-west-004`, `us-east-005`, `eu-central-003` | The middle component of the host; passed to S3 SDKs as the AWS region |
 
 Validate current region identifiers with Backblaze before production use (`docs/known-gaps.md` §3).
+
+## 7a. S3-Compatible API Settings
+
+The platform's control plane uses the B2 Native API. The S3-compatible API is offered to tenants as an alternative interface to their own data — they connect directly to B2 using their provider key as an AWS-style credential.
+
+| Key | Default | Purpose |
+|---|---|---|
+| `S3_ACCESS_FOR_TENANTS` | `true` | Whether tenant-facing documentation and provisioning surfaces include S3 endpoint info |
+| `S3_DEFAULT_ENCRYPTION_MODE` | `none` | Default bucket encryption applied at provisioning: `none`, `sse-b2`, or `sse-c` (per overlay) |
+| `S3_PRESIGNED_URL_MAX_TTL_SECONDS` | `604800` | Max TTL the platform documents to tenants for S3-style presigned URLs (AWS SDK enforces 7 days) |
+| `S3_RECONCILIATION_LIST_OBJECTS_ENABLED` | `false` | If true, the reconciliation job calls `ListObjectsV2` per bucket to detect S3-direct uploads missing from the `objects` table |
+
+See `docs/s3-compatible-api.md` for the full S3 surface, supported operations, and limitations.
 
 ---
 
