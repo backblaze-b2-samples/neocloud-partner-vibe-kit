@@ -2,6 +2,23 @@
 
 Use this canonical 12-PR roadmap. Do not combine unrelated PRs unless explicitly asked.
 
+## Phased build narrative
+
+The 12 PRs land in six stages. Each stage builds the foundation the next stage assumes; the ordering is not optional.
+
+| Stage | PRs | What it delivers |
+|---|---|---|
+| Schema and access | 1–2 | Multi-tenant data model, authorization, audit events |
+| Data plane | 3–4 | Production upload (multipart, retry, concurrency, abort) and download (presigned URLs, range reads) |
+| Money | 5–7 | Durable usage ledger, B2 CSV reconciliation, billing-period reports |
+| Provisioning | 8–9 | Provider abstraction and real B2 customer account / Group provisioning |
+| UI | 10–11 | Operator admin portal and tenant self-service portal |
+| Operations | 12 | Metrics, alerts, runbooks, stuck multipart cleanup, reconciliation drift monitoring |
+
+Most important sequencing rule: PR 5+ depends on the schema from PR 1 and the append-only ledger pattern established in PR 5 itself. Reaching for billing-shaped work before the foundation is in place is the most common implementation mistake.
+
+## Canonical 12-PR table
+
 | PR | Title | Goal | Key acceptance criteria |
 |---:|---|---|---|
 | 1 | Foundation and data model | Add metadata DB and core entities. | Tenant maps to storage accounts; storage account includes region and alias/memberEmail; buckets are child resources; shared B2 file-name builder exists; deterministic B2 file-name tests pass. |

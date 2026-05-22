@@ -21,20 +21,18 @@ The original Vibe Coding Starter Kit is useful for developer experience, local s
 
 ## Canonical implementation roadmap
 
-1. PR 1 — Foundation and data model
-2. PR 2 — Auth, RBAC, and API keys
-3. PR 3 — Parallel and resilient uploads
-4. PR 4 — Download and presigned URL flows
-5. PR 5 — Usage event ledger
-6. PR 6 — B2 usage CSV ingestion and reconciliation
-7. PR 7 — Billing and reporting foundation
-8. PR 8 — Provider abstraction
-9. PR 9 — Tenant provisioning with Groups and customer accounts/sub-accounts
-10. PR 10 — Platform admin portal
-11. PR 11 — Tenant portal
-12. PR 12 — Operational hardening
+The 12 PRs land in six stages — each one builds the foundation the next assumes.
 
-The `prompts/` directory contains one copy/paste Claude prompt per PR.
+| Stage | PRs | What it delivers |
+|---|---|---|
+| Schema and access | 1–2 | Multi-tenant data model, authorization, audit events |
+| Data plane | 3–4 | Production upload (multipart, retry, concurrency, abort) and download (presigned URLs, range reads) |
+| Money | 5–7 | Durable usage ledger, B2 CSV reconciliation, billing-period reports |
+| Provisioning | 8–9 | Provider abstraction and real B2 customer account / Group provisioning |
+| UI | 10–11 | Operator admin portal and tenant self-service portal |
+| Operations | 12 | Metrics, alerts, runbooks, stuck multipart cleanup, reconciliation drift monitoring |
+
+The full PR-by-PR breakdown with acceptance criteria lives in `docs/implementation-roadmap.md`. One copy/paste Claude prompt per PR is in `prompts/`.
 
 ## Core design decisions
 
