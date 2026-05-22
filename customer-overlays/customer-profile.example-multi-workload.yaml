@@ -1,0 +1,272 @@
+# Customer Profile Overlay — EXAMPLE (Combined: Training + DR + Inference)
+#
+# Worked example for a hypothetical neocloud customer running all three of:
+#   - AI training (large checkpoints, dataset ingest)
+#   - Disaster recovery (immutable replica of production data)
+#   - Inference serving (model retrieval, often via presigned URL)
+#
+# Not a real customer's config. This is the most complex of the three example
+# overlays. Compare with the AI-training and media-archive examples to see
+# how the same set of configurable keys responds to combined needs.
+#
+# IMPORTANT — what this overlay does NOT solve automatically:
+#
+#   1. Cross-region DR replication. The kit supports multi-region storage
+#      accounts (one per region), but does NOT automatically replicate data
+#      between them. The operator must choose ONE of:
+#        a. Backblaze cross-region replication (configured at bucket level,
+#           outside this overlay)
+#        b. Application-layer write-to-both on upload (dual-write pattern)
+#        c. Scheduled async replication job
+#      Document the chosen approach in the operational runbook.
+#
+#   2. Inference latency. B2 is high-throughput object storage, not a
+#      low-latency cache. Hot-path inference reads typically need a caching
+#      tier (CDN, local model cache, in-process LRU) in front of B2.
+#
+#   3. Per-workload quota envelopes. Quotas are per-project. Use separate
+#      projects per workload class if you want isolated quota accounting.
+#
+# For the template (all keys with defaults explained), see customer-profile.template.yaml.
+
+customer:
+  name: "acme-ml-platform"
+  description: "AI/ML platform: tenants train models, replicate to a DR region, and serve inference at scale. Combined workload."
+  workload_types:
+    - ai_training
+    - dataset_ingest
+    - model_checkpoint_archive
+    - disaster_recovery
+    - inference_serving
+  regions_required:
+    - us-west            # primary — training compute and inference serving
+    - us-east            # DR replica
+  multi_region_required: true
+
+storage_model:
+  tenant_isolation: b2_customer_account_per_tenant
+  groups_required: true
+  group_strategy: "one_group_per_region_one_account_per_tenant"
+  group_creation_source: backblaze_web_console
+  customer_account_alias_pattern: "<partner_customer_id>-<b2_partner_region>@platform.acme-ml.example.com"
+  customer_account_alias_maps_to: backblaze_memberEmail
+  account_region_model: "one_customer_account_per_required_region"
+  # Buckets per customer account — one per workload class. The DR bucket
+  # exists only in the DR region's customer account.
+  default_buckets_per_customer_account: 4
+  allow_multiple_buckets_per_customer_account: true
+  bucket_strategy: "by_workload_class"
+
+# Bucket layout per region (descriptive — the platform creates these at
+# provisioning time based on bucket_strategy):
+#
+#   us-west customer account:
+#     - {prefix}-{tenantId}-training-datasets    (training read source)
+#     - {prefix}-{tenantId}-training-checkpoints (training write destination)
+#     - {prefix}-{tenantId}-inference-models     (production model artifacts)
+#     - {prefix}-{tenantId}-control              (manifests, metadata)
+#
+#   us-east customer account:
+#     - {prefix}-{tenantId}-dr-replica           (immutable DR copy, Object Lock)
+#     - {prefix}-{tenantId}-control              (DR metadata)
+
+uploads:
+  # Training checkpoint files are large (5-50 GB). Inference model uploads
+  # are mid-size (1-10 GB). Tune for the training profile (more demanding).
+  multipart_threshold_mb: 100
+  default_part_size_mb: 200            # larger parts for very large checkpoints
+  min_part_size_mb: 5
+  max_part_size_gb: 5
+  max_parts: 10000
+  max_file_concurrency: 5              # higher than default; sustained training ingest
+  max_part_concurrency_per_file: 8     # higher than default; per-file throughput
+  max_global_in_flight_requests: 16
+  retry_attempts: 5                    # long uploads must survive transient errors
+
+small_files:
+  # Dataset ingest produces many small files. Inference models are large.
+  # Packing applies to training-datasets bucket only; inference-models bucket
+  # is left as individual large objects.
+  prefer_min_object_size_mb: 1
+  enforce_min_object_size: false
+  pack_small_files_when_practical: true
+  use_manifests_for_packed_objects: true
+  use_range_reads_for_packed_objects: true
+  preferred_packing_strategy: "10MB_segments_with_manifest"
+  pack_segment_max_bytes: 10485760     # 10 MB
+  pack_segment_max_records: 10000
+  pack_flush_interval_ms: 60000
+  # Per-bucket packing policy — the platform enforces packing on the
+  # training-datasets bucket only; inference-models objects are individual
+  # large objects (no packing).
+  packing_bucket_allowlist:
+    - "training-datasets"
+
+downloads:
+  # Inference serving is read-heavy. Presigned URLs let compute clients
+  # fetch model artifacts without holding platform credentials.
+  presigned_url_default_ttl_seconds: 3600       # 1 hour
+  presigned_url_max_ttl_seconds: 86400          # 24 hours
+  presigned_url_metering: true                  # write usage_events on issuance
+  range_request_support: true                   # required for partial model loads
+
+reporting:
+  needs_billing_exports: true
+  needs_chargeback: true               # internal chargeback per training project
+  usage_import_frequency: daily
+  attribution_priority:
+    - provider_customer_account_id
+    - storage_account_id
+    - bucket_id                        # workload class is derived from bucket
+    - object_metadata
+  unattributed_row_alert_threshold: 100
+  # Per-workload reporting — billing reports break down by bucket so the
+  # customer can see training vs. DR vs. inference costs separately.
+  report_breakdown:
+    - tenant
+    - project
+    - bucket_class                     # training-datasets, inference-models, dr-replica, etc.
+
+portal:
+  needs_platform_admin_portal: true
+  needs_tenant_portal: true
+  needs_end_user_file_browser: false   # programmatic clients (training jobs, inference servers)
+
+compliance:
+  # DR bucket gets Object Lock; training and inference buckets do not.
+  # This is per-bucket policy enforced by the platform at bucket creation.
+  object_lock_required: false          # not globally required
+  object_lock_required_for_buckets:
+    - "dr-replica"                     # immutable replica for compliance/forensics
+  object_lock_mode: governance         # platform-admin can override for DR test restores
+  retention_required: true             # for DR bucket
+  retention_required_for_buckets:
+    - "dr-replica"
+  audit_export_required: true
+  audit_retention_days: 2555           # 7 years (SOC2)
+
+quota:
+  # Mixed quota model:
+  #   - Training projects: soft (warn at 80%, allow over with chargeback)
+  #   - Inference projects: soft (read-heavy, storage growth predictable)
+  #   - DR projects: hard (cost containment — replica must not grow unbounded)
+  mode: per_project                    # platform reads quota_policy per project
+  default_mode: soft
+  default_warn_at_percent: 80
+  default_block_at_percent: 100
+  # Per-workload defaults the platform applies when a project is created
+  # under a given workload class. Projects can override.
+  workload_defaults:
+    training:
+      mode: soft
+      warn_at_percent: 80
+    inference:
+      mode: soft
+      warn_at_percent: 90              # less proactive; inference storage is predictable
+    disaster_recovery:
+      mode: hard
+      block_at_percent: 100
+
+dr:
+  # Cross-region replication strategy. The kit does NOT implement this
+  # automatically. Choose one and document the implementation.
+  replication_strategy: "application_layer_dual_write"
+  # Options:
+  #   - backblaze_native_cross_region (configured outside this kit, per bucket)
+  #   - application_layer_dual_write  (upload to primary + DR in the same flow)
+  #   - scheduled_async_replication   (background job copies primary → DR)
+  replication_lag_target_seconds: 300  # 5 minutes — application-layer dual-write target
+  dr_failover_runbook: "docs/operational-runbook.md"  # extend with DR-specific section
+  dr_restore_test_frequency: quarterly
+
+inference:
+  # Inference serving notes. The kit does not provide caching; document
+  # the operator's caching strategy here for visibility.
+  caching_strategy: "edge_cdn_in_front_of_presigned_urls"
+  # Options:
+  #   - none (every inference fetch hits B2 directly)
+  #   - operator_cdn (CDN sits in front of presigned URLs)
+  #   - per_compute_node_cache (each inference server caches recently-loaded models)
+  #   - hybrid (CDN + per-node cache)
+  cold_start_acceptable: false         # production inference must not pay B2 first-byte latency on every request
+  model_artifact_size_typical_gb: 5
+
+partner_api:
+  requires_backblaze_enablement: true
+  enabled_by_customer_self_service: false
+  required_for:
+    - provision_b2_customer_account
+    - eject_b2_customer_account
+  group_creation_via_api_supported: false
+  eject_readd_via_partner_api_supported: false
+  eject_requires_explicit_confirmation: true
+  eject_requires_provider_key_handling: true
+
+operational:
+  stale_upload_cleanup_interval_seconds: 1800   # 30 min — large training uploads take long
+  reconciliation_interval_seconds: 43200        # twice daily — DR drift detection matters
+  retention_purge_interval_seconds: 86400
+  key_rotation_interval_days: 90
+
+deletion_policy:
+  soft_delete_retention_days: 30
+  # DR bucket deletes require compliance check because Object Lock may be active.
+  purge_requires_compliance_check_for_buckets:
+    - "dr-replica"
+  purge_requires_operator_confirmation: true
+
+notes: |
+  Acme ML Platform rationale for non-default values:
+
+  - **Multi-region (us-west + us-east):** us-west hosts training compute and
+    inference serving (close to GPU pools). us-east holds the DR replica.
+    Two B2 customer accounts per tenant — one per region.
+
+  - **Four buckets per primary-region account, two per DR-region account:**
+    Buckets separate workload classes so that policies (Object Lock, packing,
+    quota) can be applied per-bucket. The platform creates these at
+    provisioning time based on `bucket_strategy: by_workload_class`.
+
+  - **Object Lock on DR bucket only:** Training checkpoints are versioned
+    application-side and may be deleted. Inference models are replaced
+    periodically. The DR replica is the immutable copy — Object Lock in
+    governance mode lets the platform admin override for DR test restores
+    without losing the protection guarantee for normal operations.
+
+  - **Packing on training-datasets bucket only:** Dataset ingest produces
+    many small files (image tiles, JSONL shards). Inference models are
+    inherently large and do not need packing. The platform applies the
+    packing pattern per bucket via `packing_bucket_allowlist`.
+
+  - **Mixed quota (soft for training/inference, hard for DR):** Training
+    chargeback works with soft quotas. DR cost must be predictable, so the
+    replica bucket has a hard cap. Implemented via per-project quota_policy.
+
+  - **Application-layer dual-write for DR replication:** Chosen over
+    Backblaze cross-region replication because the application can apply
+    business-logic decisions (e.g., skip transient training checkpoints
+    that aren't worth replicating). Replication lag target is 5 minutes;
+    monitored via reconciliation.
+
+  - **Quarterly DR restore tests:** Required by the customer's compliance
+    program. Test plan lives in the operational runbook (operator must
+    extend the runbook with a DR-specific section — see docs/operational-runbook.md).
+
+  - **Caching tier in front of inference:** B2 first-byte latency is
+    incompatible with production inference SLAs. The operator must run a
+    CDN or per-compute-node cache in front of presigned URLs. The kit does
+    not implement this; document the caching strategy and monitor cache
+    hit rate as a separate concern.
+
+  - **Twice-daily reconciliation:** Catches DR replication drift quickly.
+    Important when DR is application-layer dual-write rather than
+    Backblaze-native replication.
+
+  - **Higher concurrency (5 files, 8 parts, 16 in-flight):** Training
+    ingest is sustained and bursty. Inference downloads are mostly via
+    presigned URL (no application-layer concurrency tuning needed).
+
+  This overlay is intentionally more permissive and more complex than the
+  AI-training or media-archive examples. Combined-workload customers force
+  more configuration choices because the overlay represents the UNION of
+  what all workloads need.

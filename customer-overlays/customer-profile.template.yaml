@@ -1,0 +1,71 @@
+customer:
+  name: example-neocloud
+  description: "Example customer overlay. Do not commit real secrets."
+  workload_types:
+    - ai_training
+    - dataset_ingest
+  regions_required:
+    - us-west
+  multi_region_required: false
+
+storage_model:
+  tenant_isolation: b2_customer_account_per_tenant
+  groups_required: true
+  group_strategy: "link_existing_website_created_groups_by_customer_cohort"
+  group_creation_source: backblaze_web_console
+  customer_account_alias_pattern: "<partner_customer_id>-<b2_partner_region>@<partner_storage_domain>"
+  customer_account_alias_maps_to: backblaze_memberEmail
+  account_region_model: "one_customer_account_per_required_region"
+  default_buckets_per_customer_account: 1
+  allow_multiple_buckets_per_customer_account: true
+  bucket_strategy: "by_workload_policy_or_environment"
+
+uploads:
+  multipart_threshold_mb: 100
+  default_part_size_mb: 100
+  min_part_size_mb: 5
+  max_part_size_gb: 5
+  max_parts: 10000
+  max_file_concurrency: 3
+  max_part_concurrency_per_file: 4
+  max_global_in_flight_requests: 10
+  retry_attempts: 3
+
+small_files:
+  prefer_min_object_size_mb: 1
+  enforce_min_object_size: false
+  pack_small_files_when_practical: true
+  use_manifests_for_packed_objects: true
+  use_range_reads_for_packed_objects: true
+  preferred_packing_strategy: "customer_defined"
+
+reporting:
+  needs_billing_exports: true
+  needs_chargeback: true
+  usage_import_frequency: daily
+  attribution_priority:
+    - provider_customer_account_id
+    - storage_account_id
+    - bucket_id
+    - object_metadata
+
+portal:
+  needs_platform_admin_portal: true
+  needs_tenant_portal: true
+  needs_end_user_file_browser: false
+
+compliance:
+  object_lock_required: false
+  retention_required: false
+  audit_export_required: true
+
+partner_api:
+  requires_backblaze_enablement: true
+  enabled_by_customer_self_service: false
+  required_for:
+    - provision_b2_customer_account
+    - eject_b2_customer_account
+  group_creation_via_api_supported: false
+  eject_readd_via_partner_api_supported: false
+  eject_requires_explicit_confirmation: true
+  eject_requires_provider_key_handling: true

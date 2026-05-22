@@ -1,0 +1,145 @@
+# Neocloud Vibe Kit
+
+A Claude-ready implementation guide for building a B2-backed neocloud storage control plane, high-throughput data plane, usage/reporting layer, provisioning workflows, and operational foundation.
+
+This is **not** a simple upload/list/download app and it is **not** a finished production platform. It is a reference package that helps Claude and engineers build the platform correctly, incrementally, and with tests.
+
+## Start here
+
+Read `START_HERE.md` first. It routes Claude to the smallest useful context for the task and prevents customers from loading the entire kit.
+
+The kit has two layers:
+
+| Layer | Files | Purpose |
+|---|---|---|
+| Low-token execution layer | `START_HERE.md`, `context-packs/`, `prompts/`, `customer-overlays/`, `docs/quality-gates.md` | Day-to-day Claude execution with minimal context. |
+| Full reference layer | `docs/`, `examples/`, `postman/` | Source-of-truth architecture, contracts, examples, and reference artifacts. |
+
+## What this provides vs. the original Vibe Coding Starter Kit
+
+The original Vibe Coding Starter Kit is useful for developer experience, local setup, simple B2 API examples, and basic UI patterns. The Neocloud Vibe Kit tells Claude and engineers how to build a real neocloud foundation: account/sub-account tenant isolation, high-throughput uploads, provisioning, usage reporting, billing/chargeback, audit logs, and operations.
+
+Use the original kit for polish and examples. Do not reuse its simple-app architecture.
+
+## Canonical implementation roadmap
+
+1. PR 1 — Foundation and data model
+2. PR 2 — Auth, RBAC, and API keys
+3. PR 3 — Parallel and resilient uploads
+4. PR 4 — Download and presigned URL flows
+5. PR 5 — Usage event ledger
+6. PR 6 — B2 usage CSV ingestion and reconciliation
+7. PR 7 — Billing and reporting foundation
+8. PR 8 — Provider abstraction
+9. PR 9 — Tenant provisioning with Groups and customer accounts/sub-accounts
+10. PR 10 — Platform admin portal
+11. PR 11 — Tenant portal
+12. PR 12 — Operational hardening
+
+The `prompts/` directory contains one copy/paste Claude prompt per PR.
+
+## Core design decisions
+
+- Neocloud tenant isolation is account/sub-account-driven, not bucket-driven.
+- A tenant/customer maps to one or more provisioned B2 customer accounts/sub-accounts.
+- Groups are enabled and existing Backblaze Groups are used to organize customer accounts; Groups are created in the Backblaze website, not through the Partner API.
+- B2 has a default limit of 100 buckets per account, so buckets are child resources for workload/policy design, not the primary isolation model.
+- Partner API must be enabled through Backblaze sales/team process. Customers cannot self-enable it.
+- Partner API is required for provisioning and ejecting customer accounts.
+- Recommended account alias/memberEmail pattern: `<partner_customer_id>-<b2_partner_region>@<partner_storage_domain>`. The Neocloud alias maps to Backblaze `memberEmail`.
+- Partner API eject is not normal suspension: the account is removed from the Group but is not deleted, existing application keys can continue to function unless handled separately, and the account cannot be re-added to a Group through the Partner API.
+- A B2 customer account lives in a pre-defined region; multi-region customers require multiple customer accounts/sub-accounts.
+- B2 object keys are B2 file names. For high-scale generated names, use B2 file-name distribution across the lexicographical keyspace. The first file-name component should be the hash-derived `distribution_id`; `objects` is not a bucket or directory.
+- B2 should be treated as high-throughput object storage, not a high-IOPS tiny-object database.
+- Avoid unnecessary tiny-object amplification where practical. Prefer 1 MB+ objects when practical, but do not globally reject small files.
+
+## Directory layout
+
+```text
+neocloud-vibe-kit/
+├── START_HERE.md                          # routing — read first
+├── CLAUDE.md                              # operating manual and golden rules
+├── README.md                              # this file
+├── context-packs/                         # token-efficient per-phase summaries
+│   ├── README.md
+│   ├── foundation.context.md
+│   ├── uploads.context.md
+│   ├── provisioning.context.md
+│   ├── usage-reporting.context.md
+│   ├── billing.context.md
+│   ├── portal.context.md
+│   ├── operations.context.md
+│   └── small-files.context.md
+├── customer-overlays/                     # per-deployment overrides
+│   ├── README.md
+│   ├── customer-profile.template.yaml
+│   ├── customer-profile.example-ai-training.yaml
+│   ├── customer-profile.example-media-archive.yaml
+│   └── customer-profile.example-multi-workload.yaml
+├── docs/
+│   ├── source-of-truth.md                 # precedence order and hard invariants
+│   ├── neocloud-architecture.md           # system layers and core entities
+│   ├── neocloud-requirements.md           # requirements by domain and persona
+│   ├── api-contracts.md                   # target neocloud application API
+│   ├── data-model.md                      # canonical entities and columns
+│   ├── provisioning-and-partner-api.md    # tenant lifecycle and Partner API
+│   ├── upload-data-plane.md               # upload flows, concurrency, retry
+│   ├── usage-reporting-and-billing.md     # CSV ingestion, attribution, billing
+│   ├── security-and-tenant-isolation.md   # isolation model and key scoping
+│   ├── small-file-and-throughput-guidance.md   # object size strategy
+│   ├── implementation-roadmap.md          # PR-by-PR roadmap
+│   ├── testing-matrix.md                  # test coverage matrix by PR
+│   ├── quality-gates.md                   # required checks before merging
+│   ├── workflow-recipes.md                # step-by-step recipes for common tasks
+│   ├── operational-runbook.md             # incident response, severity, remediation
+│   ├── first-time-operator-setup.md       # operator-side onboarding checklist
+│   ├── security-review-checklist.md       # pre-production security gate
+│   ├── common-pitfalls.md                 # recurring mistakes and how to avoid them
+│   ├── configuration-reference.md         # all configurable settings
+│   ├── glossary.md                        # canonical term definitions
+│   ├── known-gaps.md                      # what is intentionally missing
+│   ├── demo-script.md                     # walkthrough for technical audiences
+│   ├── reuse-from-original-vibe-kit.md    # what to reuse vs rebuild
+│   └── adr/                               # architecture decision records
+│       ├── 000-template.md
+│       ├── 001-account-subaccount-tenant-isolation.md
+│       ├── 002-b2-file-name-distribution.md
+│       ├── 003-provider-account-first-usage-attribution.md
+│       ├── 004-multipart-upload-defaults.md
+│       ├── 005-postman-is-reference-not-source-of-truth.md
+│       ├── 006-high-throughput-not-high-iops.md
+│       └── 007-partner-api-enablements-and-regional-accounts.md
+├── prompts/                               # one canonical prompt per PR
+│   ├── README.md
+│   ├── pr1-foundation.md
+│   ├── pr2-auth-rbac-api-keys.md
+│   ├── pr3-parallel-resilient-uploads.md
+│   ├── pr4-download-presigned-urls.md
+│   ├── pr5-usage-event-ledger.md
+│   ├── pr6-b2-csv-ingestion-reconciliation.md
+│   ├── pr7-billing-reporting-foundation.md
+│   ├── pr8-provider-abstraction.md
+│   ├── pr9-tenant-provisioning.md
+│   ├── pr10-platform-admin-portal.md
+│   ├── pr11-tenant-portal.md
+│   └── pr12-operational-hardening.md
+├── examples/
+│   ├── README.md
+│   ├── api-payloads.md                    # B2 API request/response shapes
+│   └── sample-usage-csv/                  # sample B2 usage CSV with docs
+└── postman/                               # B2 Native API reference collection
+    ├── README.md
+    ├── Backblaze_B2_Postman_Collection_CORRECTED_v3.json
+    ├── b2-native-example.postman_environment.json
+    ├── b2-native-local.postman_environment.json
+    ├── neocloud-example.postman_environment.json
+    └── neocloud-local.postman_environment.json
+```
+
+## Customer overlays
+
+Use `customer-overlays/customer-profile.template.yaml` to customize workflow choices such as upload concurrency, report format, bucket layout inside customer accounts, region/account mapping, small-file packing strategy, and portal scope. Overlays may override configurable defaults, but they must not override hard invariants in `docs/source-of-truth.md`.
+
+## Postman status
+
+`postman/Backblaze_B2_Postman_Collection_CORRECTED_v3.json` is a candidate B2 Native API reference collection. It is not the target neocloud application API contract. Use `docs/api-contracts.md` for target platform APIs.

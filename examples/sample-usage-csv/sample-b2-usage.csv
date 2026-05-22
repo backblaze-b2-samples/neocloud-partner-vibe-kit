@@ -1,0 +1,6 @@
+date,account_id,bucket_name,bucket_id,region,storage_byte_hours,download_bytes,upload_bytes,api_calls,class_a_transactions,class_b_transactions,class_c_transactions
+2026-05-01,acct-acme-001,nc-acme-primary,bucket-acme-001,us-west,1099511627776,53687091200,107374182400,15000,1200,9800,4000
+2026-05-01,acct-beta-001,nc-beta-primary,bucket-beta-001,eu-central,549755813888,21474836480,32212254720,9000,800,6000,2200
+2026-05-01,acct-operator-001,nc-control-reports,bucket-control-001,us-west,10737418240,104857600,52428800,500,100,300,100
+2026-05-02,acct-acme-001,nc-acme-primary,bucket-acme-001,us-west,1209462790553,75161927680,128849018880,18000,1400,12000,4600
+2026-05-02,acct-beta-001,nc-beta-primary,bucket-beta-001,eu-central,604731395276,23622320128,42949672960,10000,850,6800,2350

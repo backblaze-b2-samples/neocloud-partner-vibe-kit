@@ -1,0 +1,149 @@
+# Customer Profile Overlay — EXAMPLE (Media Archive / Compliance Backup)
+#
+# Worked example for a hypothetical neocloud customer running a long-term
+# media archive with regulatory retention requirements (e.g., broadcast media,
+# legal evidence retention, regulated backup). Not a real customer's config.
+#
+# Compare with customer-profile.example-ai-training.yaml to see how different
+# workload characteristics drive different configuration choices.
+#
+# For the template (all keys with defaults explained), see customer-profile.template.yaml.
+
+customer:
+  name: "acme-media-archive"
+  description: "Long-term broadcast media archive with regulatory retention. Single-region, compliance-heavy, large infrequent writes."
+  workload_types:
+    - media_archive
+    - compliance_backup
+    - infrequent_access_retrieval
+  regions_required:
+    - us-east
+  multi_region_required: false
+
+storage_model:
+  tenant_isolation: b2_customer_account_per_tenant
+  groups_required: true
+  group_strategy: "one_group_per_compliance_tier"
+  group_creation_source: backblaze_web_console
+  customer_account_alias_pattern: "<partner_customer_id>-<b2_partner_region>@archive.acme-media.example.com"
+  customer_account_alias_maps_to: backblaze_memberEmail
+  account_region_model: "one_customer_account_per_required_region"
+  default_buckets_per_customer_account: 3        # ingest, archive, restore-staging
+  allow_multiple_buckets_per_customer_account: true
+  bucket_strategy: "by_retention_class"           # 7-year / 10-year / indefinite-hold buckets
+
+uploads:
+  # Media files are large but ingest is bursty/infrequent. Tune for reliability over speed.
+  multipart_threshold_mb: 100
+  default_part_size_mb: 100
+  min_part_size_mb: 5
+  max_part_size_gb: 5
+  max_parts: 10000
+  max_file_concurrency: 2                         # lower than default; predictable ingest window
+  max_part_concurrency_per_file: 4
+  max_global_in_flight_requests: 8                # leave headroom for restore traffic
+  retry_attempts: 5                               # archive writes must not be lost to transient errors
+
+small_files:
+  # Media files are inherently large. Packing not needed.
+  prefer_min_object_size_mb: 1
+  enforce_min_object_size: false
+  pack_small_files_when_practical: false          # disabled — workload has no small files
+  use_manifests_for_packed_objects: false
+  use_range_reads_for_packed_objects: false
+  preferred_packing_strategy: "none"
+
+reporting:
+  needs_billing_exports: true
+  needs_chargeback: false                         # single customer, no internal chargeback
+  usage_import_frequency: daily
+  attribution_priority:
+    - provider_customer_account_id
+    - storage_account_id
+    - bucket_id
+    - object_metadata
+  unattributed_row_alert_threshold: 10            # tight — any unattributed row is investigated
+
+portal:
+  needs_platform_admin_portal: true
+  needs_tenant_portal: true
+  needs_end_user_file_browser: true               # archivists browse and request restores
+
+compliance:
+  object_lock_required: true                      # critical — files cannot be deleted within retention
+  retention_required: true
+  audit_export_required: true
+  audit_retention_days: 3650                      # 10 years
+  object_lock_modes_supported:
+    - governance
+    - compliance                                  # compliance mode for regulated retention
+
+quota:
+  mode: hard                                      # hard cap — cost control is a customer requirement
+  warn_at_percent: 75
+  block_at_percent: 100
+
+partner_api:
+  requires_backblaze_enablement: true
+  enabled_by_customer_self_service: false
+  required_for:
+    - provision_b2_customer_account
+    - eject_b2_customer_account
+  group_creation_via_api_supported: false
+  eject_readd_via_partner_api_supported: false
+  eject_requires_explicit_confirmation: true
+  eject_requires_provider_key_handling: true
+
+operational:
+  stale_upload_cleanup_interval_seconds: 3600     # default — uploads complete in normal time
+  reconciliation_interval_seconds: 86400          # daily
+  retention_purge_interval_seconds: 86400
+  key_rotation_interval_days: 180                 # longer rotation — predictable maintenance window
+
+deletion_policy:
+  soft_delete_retention_days: 90                  # 90-day grace before purge eligibility
+  purge_requires_compliance_check: true           # cannot purge while Object Lock retention is active
+  purge_requires_operator_confirmation: true
+
+notes: |
+  Acme Media Archive rationale for non-default values:
+
+  - **Single region (us-east):** Customer's data residency requirement is
+    satisfied by one region. Multi-region would multiply cost without value
+    for an infrequent-access archive.
+
+  - **Object Lock required, compliance mode:** Regulatory retention requires
+    that even operators cannot delete files within the retention window.
+    Compliance mode (vs. governance) enforces this at the B2 layer.
+
+  - **Hard quota:** Customer treats this as a fixed-cost contract. They
+    prefer ingest failures over surprise bills. Quota warnings at 75%
+    give them runway to negotiate before the hard cap hits.
+
+  - **Three default buckets per customer account:** Workflow separates
+    ingest staging, durable archive, and restore staging. Buckets are
+    differentiated by retention class (e.g., 7-year, 10-year, indefinite).
+
+  - **Lower concurrency (2 files, 4 parts, 8 in-flight):** Ingest is a
+    scheduled batch window, not a sustained pipeline. Leaving headroom
+    for restore traffic ensures retrieval SLAs are not affected by ingest.
+
+  - **No packing strategy:** Media files are inherently large (typically
+    1–100 GB). The small-file packing pattern adds no value here.
+
+  - **10-year audit retention:** Matches the broadcast industry regulatory
+    requirement for retention records.
+
+  - **End-user file browser enabled:** Archivists at the customer regularly
+    browse the archive to locate footage for restore. This is the only
+    example where `needs_end_user_file_browser` is true; AI training had
+    only programmatic clients.
+
+  - **180-day key rotation:** Archive workloads have predictable maintenance
+    windows. Longer rotation reduces operational churn without meaningfully
+    increasing security risk for this workload.
+
+  - **90-day soft-delete + compliance check on purge:** Cannot purge files
+    while their Object Lock retention is still active. Implementation must
+    verify the Object Lock state before any purge operation. (This extends
+    the canonical data model — see docs/known-gaps.md §10 and §12.)

@@ -1,0 +1,126 @@
+# Customer Profile Overlay — EXAMPLE (AI Training)
+#
+# This is a worked example of a customer overlay for a hypothetical neocloud
+# customer running AI training workloads. It is not a real customer's config.
+# Use it as a reference for what a filled-in overlay looks like.
+#
+# For the template (all keys with defaults explained), see customer-profile.template.yaml.
+
+customer:
+  name: "acme-ai-training"
+  description: "AI training platform. Large checkpoint files, daily dataset ingest, multi-region for data residency."
+  workload_types:
+    - ai_training
+    - dataset_ingest
+    - model_checkpoint_archive
+  regions_required:
+    - us-west
+    - eu-central
+  multi_region_required: true
+
+storage_model:
+  tenant_isolation: b2_customer_account_per_tenant
+  groups_required: true
+  group_strategy: "one_group_per_region_one_account_per_tenant"
+  group_creation_source: backblaze_web_console
+  customer_account_alias_pattern: "<partner_customer_id>-<b2_partner_region>@storage.acme-ai-training.example.com"
+  customer_account_alias_maps_to: backblaze_memberEmail
+  account_region_model: "one_customer_account_per_required_region"
+  default_buckets_per_customer_account: 2     # checkpoints + datasets
+  allow_multiple_buckets_per_customer_account: true
+  bucket_strategy: "by_workload_policy_or_environment"
+
+uploads:
+  # AI checkpoint files are large (5–50 GB). Tune for big-file throughput.
+  multipart_threshold_mb: 100
+  default_part_size_mb: 200                   # larger parts for very large files
+  min_part_size_mb: 5
+  max_part_size_gb: 5
+  max_parts: 10000
+  max_file_concurrency: 5                     # higher than default; sustained ingest
+  max_part_concurrency_per_file: 8            # higher than default; per-file throughput
+  max_global_in_flight_requests: 16
+  retry_attempts: 5                           # longer retries for very long uploads
+
+small_files:
+  # Dataset ingest often produces many small files (image tiles, JSONL shards).
+  prefer_min_object_size_mb: 1
+  enforce_min_object_size: false
+  pack_small_files_when_practical: true
+  use_manifests_for_packed_objects: true
+  use_range_reads_for_packed_objects: true
+  preferred_packing_strategy: "10MB_segments_with_manifest"
+  pack_segment_max_bytes: 10485760            # 10 MB
+  pack_segment_max_records: 10000
+  pack_flush_interval_ms: 60000
+
+reporting:
+  needs_billing_exports: true
+  needs_chargeback: true                      # internal chargeback per training project
+  usage_import_frequency: daily
+  attribution_priority:
+    - provider_customer_account_id
+    - storage_account_id
+    - bucket_id
+    - object_metadata
+  unattributed_row_alert_threshold: 100
+
+portal:
+  needs_platform_admin_portal: true
+  needs_tenant_portal: true
+  needs_end_user_file_browser: false          # programmatic clients only
+
+compliance:
+  object_lock_required: false
+  retention_required: true                    # 30-day retention on deletes
+  audit_export_required: true                 # SOC2 evidence requirement
+  audit_retention_days: 2555                  # 7 years
+
+quota:
+  mode: soft                                  # warn but allow over-quota; chargeback handles cost
+  warn_at_percent: 80
+  block_at_percent: 100
+
+partner_api:
+  requires_backblaze_enablement: true
+  enabled_by_customer_self_service: false
+  required_for:
+    - provision_b2_customer_account
+    - eject_b2_customer_account
+  group_creation_via_api_supported: false
+  eject_readd_via_partner_api_supported: false
+  eject_requires_explicit_confirmation: true
+  eject_requires_provider_key_handling: true
+
+operational:
+  stale_upload_cleanup_interval_seconds: 1800     # 30 min — large files take long
+  reconciliation_interval_seconds: 86400           # daily
+  retention_purge_interval_seconds: 86400
+  key_rotation_interval_days: 90
+
+notes: |
+  Acme AI Training rationale for non-default values:
+
+  - **Multi-region (us-west + eu-central):** GDPR for EU training datasets.
+    Each tenant gets two B2 customer accounts, one per region.
+
+  - **Larger part size (200 MB) and higher concurrency:** Tenants regularly
+    upload 20–50 GB checkpoints. Increasing part size and concurrency reduces
+    total transfer time. Tested against B2 rate limits at 16 in-flight requests.
+
+  - **Packing strategy enabled:** Dataset ingest commonly produces 10k–100k
+    files per training run, many under 1 MB. Without packing, ingest hits
+    request-rate ceilings on the B2 side.
+
+  - **Soft quota:** Customer prefers chargeback over hard blocks. Quota is
+    informational and feeds the internal cost-attribution dashboard.
+
+  - **30-day retention on deletes:** Operator policy for audit/forensic
+    purposes. Implementation extends the canonical data model with a
+    `tenants.retention_until` column (see docs/known-gaps.md §10).
+
+  - **7-year audit retention:** SOC2 compliance for the parent organization.
+
+  - **Stale upload cleanup at 30 minutes:** Large checkpoint uploads can take
+    20+ minutes; default hourly cleanup is sufficient. Adjust only if
+    sustained-throughput tests show longer uploads.
