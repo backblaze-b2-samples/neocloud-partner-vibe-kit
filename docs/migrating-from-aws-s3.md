@@ -35,7 +35,7 @@ account — see `docs/adr/008-b2-native-vs-s3-compatible.md`.
 | IAM users/roles, access key + secret | The B2 **application key** *is* the S3 credential: `keyID` → access key, `applicationKey` → secret |
 | SigV2 or SigV4 | **SigV4 only.** SigV2 is rejected |
 | S3 auto-scales throughput per key prefix | **B2 does not repartition by prefix** — you distribute writes yourself (see §3) |
-| `ETag == MD5`, IAM/KMS/tagging/ACLs available | ETag is *not* MD5 for multipart; **SSE-KMS, object tagging, IAM, object-ACLs, website config are unsupported** (§6). Lifecycle **expiration** rules *are* supported; only storage-class **transitions** don't apply (§6b) |
+| `ETag == MD5`, IAM/KMS/tagging/ACLs available | ETag is *not* MD5 for multipart; **SSE-KMS, object tagging, IAM, object-ACLs, website config are unsupported** (§6). Lifecycle expiration & abort *are* supported but reshaped — current-version expiration needs a paired delete-marker rule; transitions/tag/size filters are rejected (§6b) |
 
 ## 1. Endpoint, region, and credentials
 
@@ -55,7 +55,8 @@ account — see `docs/adr/008-b2-native-vs-s3-compatible.md`.
 
 ## 2. Authentication: SigV4 only
 
-Force SigV4 in every client. Backblaze does **not** support SigV2.
+Force SigV4 in every client. Backblaze does **not** support SigV2 *(verified: a
+SigV2 request is rejected by B2 with `InvalidRequest`)*.
 
 - boto3 / botocore: `Config(signature_version="s3v4")`
 - AWS CLI: `aws configure set default.s3.signature_version s3v4`
@@ -96,36 +97,39 @@ prefix enumeration (`docs/common-pitfalls.md` §8 hot spots, §9 listing).
 
 ## 4. Checksums and integrity (the part most migrations miss)
 
-AWS tooling routinely treats **`ETag` as the object's MD5**. That assumption
-breaks on B2 (and on AWS itself for multipart/encrypted objects):
+AWS tooling routinely treats **`ETag` as the object's MD5** — an assumption that
+breaks for multipart/encrypted objects on B2 *and* on AWS. The behavior below was
+**verified live against Backblaze B2 `us-west-004` on 2026-06-06** (boto3/botocore
+1.43).
 
-- **ETag is MD5 only** for a single-part, unencrypted `PutObject`. For a
-  **multipart** upload the ETag is `md5(concat(part_md5s))-<partCount>` — not the
-  object's MD5. With SSE-C it is not an MD5 at all. **Do not** use ETag as a
-  content hash for integrity verification across multipart objects.
-- **B2 Native API** verifies object integrity with **SHA-1**
-  (`X-Bz-Content-Sha1` per file; per-part SHA-1 plus an array at
-  `b2_finish_large_file`). The platform's own data plane (PR 3) uses this — store
-  the checksum in metadata, not by reading back the ETag.
-- **S3-compatible PUT** integrity: send **`Content-MD5`** (base64 MD5) for
-  single-part end-to-end verification. For multipart, validate **per part**, not
-  via the final ETag.
+**ETag**
+- **Single-part, unencrypted `PutObject`:** ETag **is** the hex MD5 of the body.
+  *(verified)*
+- **Multipart:** ETag is `md5(concat(part_md5s))-<partCount>` (e.g. `…-2`) — **not**
+  the whole-object MD5. *(verified — the formula matched exactly.)* With SSE-C it is
+  not an MD5 at all. **Never** use ETag as a content hash across multipart objects.
 
-**Modern AWS SDK gotcha (call this out in onboarding).** Recent AWS SDKs and the
-AWS CLI enable **automatic data-integrity checksums** by default (CRC32 via
-`x-amz-checksum-*` trailers, `request_checksum_calculation = when_supported`).
-Against a non-AWS S3 endpoint this can surface as signature or
-`x-amz-content-sha256` / checksum errors after an SDK upgrade. If you see those:
+**S3 additional checksums (`x-amz-checksum-*`) — supported on B2.** B2's S3
+endpoint **accepts and returns CRC32, CRC32C, SHA1, and SHA256** *(all four
+verified: accepted on `PutObject(ChecksumAlgorithm=…)`, returned on
+`HeadObject(ChecksumMode='ENABLED')`)*. Practical consequences:
 
-- boto3 / AWS CLI v2: set `request_checksum_calculation = when_required` and
-  `response_checksum_validation = when_required` (in `~/.aws/config`, or env
-  `AWS_REQUEST_CHECKSUM_CALCULATION=when_required` /
-  `AWS_RESPONSE_CHECKSUM_VALIDATION=when_required`).
+- Modern boto3 / AWS CLI default to attaching a **CRC32** checksum
+  (`request_checksum_calculation = when_supported`). **This works against B2
+  as-is** — B2 accepts and stores it; no `when_required` workaround is needed.
+  *(verified: a default `PutObject` stored `ChecksumCRC32`.)*
+- **CRC32C** needs the `botocore[crt]` extra installed **client-side** (to compute
+  the digest locally) — a client dependency, not a B2 limitation.
+- For explicit end-to-end integrity, pass `ChecksumAlgorithm='SHA256'` (or CRC32)
+  on PUT and read it back with `ChecksumMode='ENABLED'`. **`Content-MD5`** on PUT
+  is also accepted *(verified)* and is the most portable single-part option.
 
-Confirm which `x-amz-checksum-*` algorithms Backblaze's S3 endpoint honors
-against your region before relying on them; **`Content-MD5` + per-part
-validation is the portable baseline.** (Postman/live-validation status is
-tracked per `docs/adr/005-postman-is-reference-not-source-of-truth.md`.)
+**B2 Native API** verifies integrity with **SHA-1** (`X-Bz-Content-Sha1` per file;
+per-part SHA-1 plus an array at `b2_finish_large_file`). *(Verified: a correct
+`X-Bz-Content-Sha1` is accepted; a wrong one is rejected `400 bad_request:
+Checksum did not match data received`.)* The platform's own data
+plane (PR 3) uses this — store the checksum in metadata, not by reading back the
+ETag.
 
 ## 5. Multipart tuning
 
@@ -154,25 +158,54 @@ tooling depends on any of these, redesign that dependency before migrating.
 (Lifecycle rules **are** supported — see §6b.) Full surface:
 `docs/s3-compatible-api.md` §Explicitly NOT Supported.
 
-## 6b. Lifecycle rules — supported, with caveats
+*Verified live (2026-06-06):* a SigV2 request → `InvalidRequest`; object ACL →
+`NotImplemented`; SSE-KMS → `InvalidArgument`; `PutBucketWebsite` →
+`NotImplemented`. **Tagging is a silent trap:** `PutObjectTagging` returns **200
+but discards the tags** (`GetObjectTagging` comes back empty), and `PutObject`
+with a `Tagging` header is rejected `InvalidArgument` — so a migrating app gets no
+error but loses its tags. Treat tagging as unavailable.
 
-Lifecycle rules **are supported on B2**, including through the S3 API — set them
-via `PutBucketLifecycleConfiguration` (or the B2 Native API `lifecycleRules`, or
-the web console). This is one of the smoother parts of an AWS migration, with one
-exception:
+## 6b. Lifecycle rules — supported, but reshaped for B2
 
-- **Expiration rules port cleanly.** S3 expiration maps to B2 hide/delete:
-  current-version expiration creates a hide marker (matching S3 delete-marker
-  behavior); noncurrent-version expiration deletes old versions after N days.
-  Prefix filters map to B2 file-name prefixes, and incomplete-multipart-upload
-  cleanup (`AbortIncompleteMultipartUpload`) is supported.
-- **Transitions do NOT apply** — this is the one thing to rework. B2 has a single
-  storage class, so S3 storage-class **transition** actions (e.g., to
-  Glacier/IA/Intelligent-Tiering) have no equivalent. Drop them; keep expiration.
-- **Unsupported within S3 lifecycle:** tag-based filters (`Tag`), object-size
-  filters (`ObjectSizeGreaterThan` / `ObjectSizeLessThan`), `And` filter
-  combinations, and disabled rules. Versioned buckets only — which is every B2
-  bucket (versioning is on by default).
+Lifecycle rules **are supported on B2** through the S3 API
+(`PutBucketLifecycleConfiguration`), the B2 Native API (`lifecycleRules`), or the
+web console. But a lifecycle config exported from AWS rarely applies to B2
+unchanged. Behavior below was **verified live against B2 `us-west-004`
+(2026-06-06)**.
+
+**1. Current-version expiration must be paired with delete-marker cleanup.**
+Because every B2 bucket is versioned, a bare `Expiration { Days: N }` rule is
+**rejected**:
+
+> `MalformedXML: …has an Expiration rule but there is no ExpiredObjectDeleteMarker
+> rule with the exact same prefix`
+
+You must add a second rule, **same prefix**, with
+`Expiration { ExpiredObjectDeleteMarker: true }`. The requirement is mutual — an
+`ExpiredObjectDeleteMarker` rule alone is likewise rejected. Verified-accepted
+shape:
+
+```json
+{ "Rules": [
+  { "ID": "expire",  "Filter": {"Prefix": "tmp/"}, "Status": "Enabled",
+    "Expiration": {"Days": 30} },
+  { "ID": "cleanup", "Filter": {"Prefix": "tmp/"}, "Status": "Enabled",
+    "Expiration": {"ExpiredObjectDeleteMarker": true} }
+]}
+```
+
+`NoncurrentVersionExpiration { NoncurrentDays: N }` and
+`AbortIncompleteMultipartUpload { DaysAfterInitiation: N }` are each accepted on
+their own. Prefix filters map to B2 file-name prefixes.
+
+**2. Storage-class transitions don't apply.** B2 has a single storage class, so S3
+`Transition` actions (Glacier/IA/Intelligent-Tiering) are rejected
+(`MalformedXML: …unsupported elements …Rule.Transition`). Drop them.
+
+**Also rejected (verified):** tag-based filters (`Tag`), object-size filters
+(`ObjectSizeGreaterThan` / `ObjectSizeLessThan`), `And` filter combinations, and
+disabled rules (`Status: Disabled`). Versioned buckets only — which is every B2
+bucket.
 
 See `docs/s3-compatible-api.md` for the operation list.
 
@@ -192,26 +225,22 @@ s3 = boto3.client(
     region_name="us-west-004",
     aws_access_key_id=APPLICATION_KEY_ID,      # B2 keyID
     aws_secret_access_key=APPLICATION_KEY,     # B2 applicationKey
-    config=Config(
-        signature_version="s3v4",
-        request_checksum_calculation="when_required",   # avoid CRC-trailer surprises
-        response_checksum_validation="when_required",
-    ),
+    config=Config(signature_version="s3v4"),   # SigV4 is the only required override
 )
+# B2 supports the default CRC32 integrity checksum (§4) — no checksum config
+# needed. CRC32C additionally requires `pip install botocore[crt]` client-side.
 ```
 
 **AWS CLI**
 ```bash
 aws configure set default.s3.signature_version s3v4
-export AWS_REQUEST_CHECKSUM_CALCULATION=when_required
 aws --endpoint-url https://s3.us-west-004.backblazeb2.com \
     s3 ls s3://my-bucket/
 ```
 
 **rclone** — either the S3 backend (`provider = Other`,
 `endpoint = s3.us-west-004.backblazeb2.com`, SigV4) or rclone's **native `b2`
-backend** (uses keyID/applicationKey directly; often simpler and avoids the S3
-checksum-trailer issue entirely).
+backend** (uses keyID/applicationKey directly).
 
 **MinIO `mc`**
 ```bash
@@ -236,8 +265,9 @@ Provisioning a tenant for S3 access is a standard flow — see
 - **Don't implement tenant listing via S3 prefix enumeration** — use metadata
   (§3).
 - **Don't depend on SSE-KMS, tagging, IAM, ACLs, or website config** (§6).
-- **Don't port S3 lifecycle *transition* rules** — B2 has one storage class;
-  keep expiration rules, drop transitions (§6b).
+- **Don't expect an AWS lifecycle config to apply unchanged** — a bare
+  `Expiration{Days}` rule is rejected (needs a paired `ExpiredObjectDeleteMarker`
+  rule), and storage-class transitions/tag/size filters aren't supported (§6b).
 
 ## Cross-references
 
@@ -254,8 +284,8 @@ Provisioning a tenant for S3 access is a standard flow — see
 - [ ] Client uses `s3.<region>.backblazeb2.com` and SigV4; SigV2 attempt is rejected.
 - [ ] Tenant key (not the master key) is the S3 credential; capabilities are least-privilege.
 - [ ] Generated keys are `distribution_id`-first; no timestamp/tenant prefix on high-volume writes.
-- [ ] Integrity verification does not assume `ETag == MD5`; uses `Content-MD5`/per-part or B2-Native SHA-1.
-- [ ] SDK auto-checksum behavior is set to `when_required` (or validated against the endpoint).
+- [ ] Integrity verification does not assume `ETag == MD5`; uses an `x-amz-checksum-*` algorithm (CRC32/CRC32C/SHA1/SHA256 — all supported by B2), `Content-MD5`, or B2-Native SHA-1.
+- [ ] If using CRC32C, the client has `botocore[crt]` installed (B2 supports it; the digest is computed client-side).
 - [ ] No code path depends on SSE-KMS, object tagging, IAM, object ACLs, or website config.
-- [ ] Lifecycle: expiration rules ported as-is; storage-class transition rules removed/reworked (B2 has one storage class).
+- [ ] Lifecycle: each current-version `Expiration{Days}` rule is paired with an `ExpiredObjectDeleteMarker` rule (same prefix); transitions, tag/size filters, `And`, and disabled rules removed.
 - [ ] Multipart part size tuned above the 8 MB SDK default for large transfers; aborts on failure.
