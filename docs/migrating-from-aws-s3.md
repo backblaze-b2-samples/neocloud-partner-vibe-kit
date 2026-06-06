@@ -35,7 +35,7 @@ account — see `docs/adr/008-b2-native-vs-s3-compatible.md`.
 | IAM users/roles, access key + secret | The B2 **application key** *is* the S3 credential: `keyID` → access key, `applicationKey` → secret |
 | SigV2 or SigV4 | **SigV4 only.** SigV2 is rejected |
 | S3 auto-scales throughput per key prefix | **B2 does not repartition by prefix** — you distribute writes yourself (see §3) |
-| `ETag == MD5`, IAM/KMS/tagging/ACLs available | ETag is *not* MD5 for multipart; **SSE-KMS, object tagging, IAM, object-ACLs, website config are unsupported** (§6). Lifecycle **expiration** rules *are* supported; only storage-class **transitions** don't apply (§6b) |
+| `ETag == MD5`, IAM/KMS/tagging/ACLs available | ETag is *not* MD5 for multipart; **SSE-KMS, object tagging, IAM, object-ACLs, website config are unsupported** (§6). Lifecycle expiration & abort *are* supported but reshaped — current-version expiration needs a paired delete-marker rule; transitions/tag/size filters are rejected (§6b) |
 
 ## 1. Endpoint, region, and credentials
 
@@ -155,25 +155,47 @@ tooling depends on any of these, redesign that dependency before migrating.
 (Lifecycle rules **are** supported — see §6b.) Full surface:
 `docs/s3-compatible-api.md` §Explicitly NOT Supported.
 
-## 6b. Lifecycle rules — supported, with caveats
+## 6b. Lifecycle rules — supported, but reshaped for B2
 
-Lifecycle rules **are supported on B2**, including through the S3 API — set them
-via `PutBucketLifecycleConfiguration` (or the B2 Native API `lifecycleRules`, or
-the web console). This is one of the smoother parts of an AWS migration, with one
-exception:
+Lifecycle rules **are supported on B2** through the S3 API
+(`PutBucketLifecycleConfiguration`), the B2 Native API (`lifecycleRules`), or the
+web console. But a lifecycle config exported from AWS rarely applies to B2
+unchanged. Behavior below was **verified live against B2 `us-west-004`
+(2026-06-06)**.
 
-- **Expiration rules port cleanly.** S3 expiration maps to B2 hide/delete:
-  current-version expiration creates a hide marker (matching S3 delete-marker
-  behavior); noncurrent-version expiration deletes old versions after N days.
-  Prefix filters map to B2 file-name prefixes, and incomplete-multipart-upload
-  cleanup (`AbortIncompleteMultipartUpload`) is supported.
-- **Transitions do NOT apply** — this is the one thing to rework. B2 has a single
-  storage class, so S3 storage-class **transition** actions (e.g., to
-  Glacier/IA/Intelligent-Tiering) have no equivalent. Drop them; keep expiration.
-- **Unsupported within S3 lifecycle:** tag-based filters (`Tag`), object-size
-  filters (`ObjectSizeGreaterThan` / `ObjectSizeLessThan`), `And` filter
-  combinations, and disabled rules. Versioned buckets only — which is every B2
-  bucket (versioning is on by default).
+**1. Current-version expiration must be paired with delete-marker cleanup.**
+Because every B2 bucket is versioned, a bare `Expiration { Days: N }` rule is
+**rejected**:
+
+> `MalformedXML: …has an Expiration rule but there is no ExpiredObjectDeleteMarker
+> rule with the exact same prefix`
+
+You must add a second rule, **same prefix**, with
+`Expiration { ExpiredObjectDeleteMarker: true }`. The requirement is mutual — an
+`ExpiredObjectDeleteMarker` rule alone is likewise rejected. Verified-accepted
+shape:
+
+```json
+{ "Rules": [
+  { "ID": "expire",  "Filter": {"Prefix": "tmp/"}, "Status": "Enabled",
+    "Expiration": {"Days": 30} },
+  { "ID": "cleanup", "Filter": {"Prefix": "tmp/"}, "Status": "Enabled",
+    "Expiration": {"ExpiredObjectDeleteMarker": true} }
+]}
+```
+
+`NoncurrentVersionExpiration { NoncurrentDays: N }` and
+`AbortIncompleteMultipartUpload { DaysAfterInitiation: N }` are each accepted on
+their own. Prefix filters map to B2 file-name prefixes.
+
+**2. Storage-class transitions don't apply.** B2 has a single storage class, so S3
+`Transition` actions (Glacier/IA/Intelligent-Tiering) are rejected
+(`MalformedXML: …unsupported elements …Rule.Transition`). Drop them.
+
+**Also rejected (verified):** tag-based filters (`Tag`), object-size filters
+(`ObjectSizeGreaterThan` / `ObjectSizeLessThan`), `And` filter combinations, and
+disabled rules (`Status: Disabled`). Versioned buckets only — which is every B2
+bucket.
 
 See `docs/s3-compatible-api.md` for the operation list.
 
@@ -233,8 +255,9 @@ Provisioning a tenant for S3 access is a standard flow — see
 - **Don't implement tenant listing via S3 prefix enumeration** — use metadata
   (§3).
 - **Don't depend on SSE-KMS, tagging, IAM, ACLs, or website config** (§6).
-- **Don't port S3 lifecycle *transition* rules** — B2 has one storage class;
-  keep expiration rules, drop transitions (§6b).
+- **Don't expect an AWS lifecycle config to apply unchanged** — a bare
+  `Expiration{Days}` rule is rejected (needs a paired `ExpiredObjectDeleteMarker`
+  rule), and storage-class transitions/tag/size filters aren't supported (§6b).
 
 ## Cross-references
 
@@ -254,5 +277,5 @@ Provisioning a tenant for S3 access is a standard flow — see
 - [ ] Integrity verification does not assume `ETag == MD5`; uses an `x-amz-checksum-*` algorithm (CRC32/CRC32C/SHA1/SHA256 — all supported by B2), `Content-MD5`, or B2-Native SHA-1.
 - [ ] If using CRC32C, the client has `botocore[crt]` installed (B2 supports it; the digest is computed client-side).
 - [ ] No code path depends on SSE-KMS, object tagging, IAM, object ACLs, or website config.
-- [ ] Lifecycle: expiration rules ported as-is; storage-class transition rules removed/reworked (B2 has one storage class).
+- [ ] Lifecycle: each current-version `Expiration{Days}` rule is paired with an `ExpiredObjectDeleteMarker` rule (same prefix); transitions, tag/size filters, `And`, and disabled rules removed.
 - [ ] Multipart part size tuned above the 8 MB SDK default for large transfers; aborts on failure.
