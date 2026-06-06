@@ -97,3 +97,63 @@ s3_compatible_api:
   # not restrict this at the protocol level — the restriction is platform
   # policy. The master key is loaded only by the platform's control plane.
   master_key_must_not_be_used_as_s3_credential: true
+
+# ---------------------------------------------------------------------------
+# Optional configurable blocks
+#
+# Everything below is part of the configurable surface (see
+# docs/source-of-truth.md §Configurable defaults). They are included with safe
+# defaults so this template documents every key an overlay may set — see the
+# worked examples for how they vary by workload. Trim any block your workload
+# does not need; overlay validation only warns on UNKNOWN keys, never on
+# omitted optional ones.
+# ---------------------------------------------------------------------------
+
+# Quota policy and thresholds. `soft` warns; `hard` blocks writes at the cap.
+quota:
+  mode: soft                                  # soft | hard | per_project
+  default_warn_at_percent: 80
+  default_block_at_percent: 100
+  # Only used when mode: per_project — per-workload overrides, e.g.:
+  # workload_defaults:
+  #   training: { mode: soft, warn_at_percent: 80 }
+  #   disaster_recovery: { mode: hard, block_at_percent: 100 }
+
+# Tenant download / presigned-URL behavior.
+downloads:
+  presigned_url_default_ttl_seconds: 3600
+  presigned_url_max_ttl_seconds: 86400
+  presigned_url_metering: true                # count downloads as billable usage
+  range_request_support: true
+
+# Soft-delete and purge behavior for tenant objects.
+deletion_policy:
+  soft_delete_retention_days: 30
+  purge_requires_operator_confirmation: true
+  # purge_requires_compliance_check_for_buckets:
+  #   - dr-replica
+
+# Background job cadences and credential rotation (PR 12 — operations).
+operational:
+  stale_upload_cleanup_interval_seconds: 1800 # abort orphaned multipart uploads
+  reconciliation_interval_seconds: 43200      # usage/CSV drift reconciliation
+  retention_purge_interval_seconds: 86400
+  key_rotation_interval_days: 90
+
+# Disaster recovery. OPTIONAL — only for DR workloads. The kit does not
+# automate cross-region replication; this records the operator's choice.
+dr:
+  replication_strategy: none                  # none | application_layer_dual_write
+  replication_lag_target_seconds: 300
+  dr_restore_test_frequency: quarterly
+
+# Inference serving. OPTIONAL — only for inference workloads. B2 first-byte
+# latency requires an operator-provided cache/CDN; this is not kit-managed.
+inference:
+  caching_strategy: none                      # none | edge_cdn_in_front_of_presigned_urls
+  cold_start_acceptable: true
+  model_artifact_size_typical_gb: 1
+
+# Free-text rationale for any non-default choices above. Required by
+# customer-overlays/README.md §Creating a new overlay (step 5).
+notes: "Document non-default configuration choices and their rationale here."

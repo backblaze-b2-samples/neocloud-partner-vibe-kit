@@ -31,6 +31,7 @@ source_of_truth_for:
 - Run linting.
 - Run tests relevant to changed area.
 - Validate JSON artifacts.
+- Run the kit validator: `python scripts/validate_kit.py` (enforces the static/doc gates in `docs/testing-matrix.md`; also runs in CI via `.github/workflows/kit-qa.yml`).
 - Update docs if contracts changed.
 - Summarize files, behavior, tests, commands, risks, and follow-ups.
 

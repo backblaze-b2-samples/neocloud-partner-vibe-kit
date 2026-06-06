@@ -1,0 +1,31 @@
+# Kit QA — enforces the static/doc consistency gates from docs/testing-matrix.md
+# so the kit can't silently drift between handoffs. This kit is a content
+# product (docs, prompts, context-packs, overlays, Postman), so there is no app
+# to build or test — `scripts/validate_kit.py` is the test suite.
+name: Kit QA
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: kit-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate kit consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install validator deps
+        run: pip install -r scripts/requirements.txt
+
+      - name: Run kit validator
+        run: python scripts/validate_kit.py
