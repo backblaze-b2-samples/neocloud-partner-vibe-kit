@@ -7,9 +7,13 @@ When a gap is closed, remove its entry from this document and reflect the change
 
 ---
 
-## 1. No Application Code
+## 1. No Platform Application Code
 
-The kit contains zero executable code. There are no source files (no `.ts`, `.js`, `.py`, `.go`, etc.), no dependency manifests (no `package.json`, `requirements.txt`, `go.mod`), no test runners, and no CI configuration. The kit consists of documentation, prompts, context packs, and reference artifacts only.
+The kit contains no implementation of the neocloud platform itself — no control plane, data plane, provisioning, billing, or portal code. Documentation, prompts, context packs, and reference artifacts describe *how* to build it.
+
+Two kinds of supporting code live in the repo, and **neither is the platform**:
+- **Kit-maintenance tooling** — `scripts/validate_kit.py` and `.github/workflows/kit-qa.yml` enforce the kit's own static/doc consistency gates.
+- **A concept demo** — `quickstart/` is a small, runnable demonstration of the kit's core invariants (distribution_id naming, durable usage, metadata browsing, presigned download) against a real B2 bucket. It is a learning artifact, explicitly not the platform.
 
 **Impact:** Every PR listed in `docs/implementation-roadmap.md` is unbuilt. The 12-PR roadmap is the build plan, not a build log.
 

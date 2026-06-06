@@ -7,6 +7,18 @@ A Claude-ready implementation guide for Backblaze partners building a B2-backed 
 
 This is **not** a simple upload/list/download app and it is **not** a finished production platform. It is a reference package that helps Claude and engineers build the platform correctly, incrementally, and with tests.
 
+## See it work in 5 minutes
+
+Want to watch the kit's core invariants (distribution_id naming, durable usage events, metadata-based browsing, presigned download) run against a real B2 bucket before building anything? Run the concept demo:
+
+```bash
+cp .env.example .env          # fill in a THROWAWAY bucket's B2 key
+pip install -r quickstart/requirements.txt
+python quickstart/quickstart.py
+```
+
+It writes under a unique prefix and cleans up after itself. See [`quickstart/README.md`](quickstart/README.md). The demo is a *learning artifact*, not the platform — build that with the PR prompts.
+
 ## Start here
 
 Read `START_HERE.md` first. It routes Claude to the smallest useful context for the task and prevents customers from loading the entire kit.
@@ -59,6 +71,7 @@ neocloud-vibe-kit/
 ├── START_HERE.md                          # routing — read first
 ├── CLAUDE.md                              # operating manual and golden rules
 ├── README.md                              # this file
+├── quickstart/                            # 5-min runnable concept demo (not the platform)
 ├── context-packs/                         # token-efficient per-phase summaries
 │   ├── README.md
 │   ├── foundation.context.md
