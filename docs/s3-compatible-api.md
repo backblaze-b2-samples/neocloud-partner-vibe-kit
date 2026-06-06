@@ -119,7 +119,7 @@ Validated against Backblaze documentation. The list reflects the most commonly u
 - GetBucketLocation
 - GetBucketAcl / PutBucketAcl (limited — canned values only)
 - GetBucketVersioning / PutBucketVersioning (versioning is on by default for B2)
-- GetBucketLifecycleConfiguration / PutBucketLifecycleConfiguration / DeleteBucketLifecycle
+- GetBucketLifecycleConfiguration / PutBucketLifecycleConfiguration / DeleteBucketLifecycle (expiration rules → B2 hide/delete + incomplete-multipart cleanup; **no** storage-class transitions, tag/size filters, `And`, or disabled rules; versioned buckets only. See `docs/migrating-from-aws-s3.md` §6b)
 - GetBucketEncryption / PutBucketEncryption / DeleteBucketEncryption (SSE-B2 / SSE-C only)
 - GetBucketCORS / PutBucketCORS / DeleteBucketCORS
 - GetObjectLockConfiguration / PutObjectLockConfiguration
