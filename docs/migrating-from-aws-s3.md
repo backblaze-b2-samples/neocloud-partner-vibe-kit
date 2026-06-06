@@ -35,7 +35,7 @@ account — see `docs/adr/008-b2-native-vs-s3-compatible.md`.
 | IAM users/roles, access key + secret | The B2 **application key** *is* the S3 credential: `keyID` → access key, `applicationKey` → secret |
 | SigV2 or SigV4 | **SigV4 only.** SigV2 is rejected |
 | S3 auto-scales throughput per key prefix | **B2 does not repartition by prefix** — you distribute writes yourself (see §3) |
-| `ETag == MD5`, IAM/KMS/tagging/ACLs available | ETag is *not* MD5 for multipart; **SSE-KMS, object tagging, IAM, object-ACLs, website config, lifecycle are unsupported** (see §6) |
+| `ETag == MD5`, IAM/KMS/tagging/ACLs available | ETag is *not* MD5 for multipart; **SSE-KMS, object tagging, IAM, object-ACLs, website config are unsupported** (§6). Lifecycle **expiration** rules *are* supported; only storage-class **transitions** don't apply (§6b) |
 
 ## 1. Endpoint, region, and credentials
 
@@ -149,10 +149,32 @@ considerations.
 Backblaze's S3 implementation does **not** support: **SSE-KMS** (SSE-B2 and
 SSE-C are supported), **object tagging**, **IAM roles/policies**, **object-level
 ACLs** (bucket-level canned `private`/`public-read` only), **website
-configuration**, **bucket logging**, and **lifecycle rules** via the S3 API.
-SigV2 is unsupported. If incoming tooling depends on any of these, redesign that
-dependency before migrating. Full surface: `docs/s3-compatible-api.md`
-§Explicitly NOT Supported.
+configuration**, and **bucket logging**. SigV2 is unsupported. If incoming
+tooling depends on any of these, redesign that dependency before migrating.
+(Lifecycle rules **are** supported — see §6b.) Full surface:
+`docs/s3-compatible-api.md` §Explicitly NOT Supported.
+
+## 6b. Lifecycle rules — supported, with caveats
+
+Lifecycle rules **are supported on B2**, including through the S3 API — set them
+via `PutBucketLifecycleConfiguration` (or the B2 Native API `lifecycleRules`, or
+the web console). This is one of the smoother parts of an AWS migration, with one
+exception:
+
+- **Expiration rules port cleanly.** S3 expiration maps to B2 hide/delete:
+  current-version expiration creates a hide marker (matching S3 delete-marker
+  behavior); noncurrent-version expiration deletes old versions after N days.
+  Prefix filters map to B2 file-name prefixes, and incomplete-multipart-upload
+  cleanup (`AbortIncompleteMultipartUpload`) is supported.
+- **Transitions do NOT apply** — this is the one thing to rework. B2 has a single
+  storage class, so S3 storage-class **transition** actions (e.g., to
+  Glacier/IA/Intelligent-Tiering) have no equivalent. Drop them; keep expiration.
+- **Unsupported within S3 lifecycle:** tag-based filters (`Tag`), object-size
+  filters (`ObjectSizeGreaterThan` / `ObjectSizeLessThan`), `And` filter
+  combinations, and disabled rules. Versioned buckets only — which is every B2
+  bucket (versioning is on by default).
+
+See `docs/s3-compatible-api.md` for the operation list.
 
 ## 7. Tool conversion cheat-sheet
 
@@ -213,7 +235,9 @@ Provisioning a tenant for S3 access is a standard flow — see
   B2 write hot spots (§3).
 - **Don't implement tenant listing via S3 prefix enumeration** — use metadata
   (§3).
-- **Don't depend on SSE-KMS, tagging, IAM, ACLs, or lifecycle** (§6).
+- **Don't depend on SSE-KMS, tagging, IAM, ACLs, or website config** (§6).
+- **Don't port S3 lifecycle *transition* rules** — B2 has one storage class;
+  keep expiration rules, drop transitions (§6b).
 
 ## Cross-references
 
@@ -232,5 +256,6 @@ Provisioning a tenant for S3 access is a standard flow — see
 - [ ] Generated keys are `distribution_id`-first; no timestamp/tenant prefix on high-volume writes.
 - [ ] Integrity verification does not assume `ETag == MD5`; uses `Content-MD5`/per-part or B2-Native SHA-1.
 - [ ] SDK auto-checksum behavior is set to `when_required` (or validated against the endpoint).
-- [ ] No code path depends on SSE-KMS, object tagging, IAM, object ACLs, website config, or lifecycle.
+- [ ] No code path depends on SSE-KMS, object tagging, IAM, object ACLs, or website config.
+- [ ] Lifecycle: expiration rules ported as-is; storage-class transition rules removed/reworked (B2 has one storage class).
 - [ ] Multipart part size tuned above the 8 MB SDK default for large transfers; aborts on failure.
