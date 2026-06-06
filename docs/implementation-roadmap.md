@@ -1,3 +1,4 @@
+<!-- last_verified: 2026-06-06 -->
 # Implementation Roadmap
 
 Use this canonical 12-PR roadmap. Do not combine unrelated PRs unless explicitly asked.

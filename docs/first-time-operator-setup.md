@@ -1,3 +1,4 @@
+<!-- last_verified: 2026-06-06 -->
 # First-Time Operator Setup
 
 A step-by-step checklist for an organization standing up the neocloud platform for the first time. This is the operations-side companion to the developer-facing PR prompts in `prompts/`.

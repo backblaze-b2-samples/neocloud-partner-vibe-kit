@@ -1,4 +1,5 @@
 ---
+last_verified: 2026-06-06
 status: routing
 token_note: Read this first. It tells Claude which minimal files to load for each workflow.
 ---

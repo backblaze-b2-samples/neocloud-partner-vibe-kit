@@ -1,3 +1,4 @@
+<!-- last_verified: 2026-06-06 -->
 # Neocloud / Partner Vibe Kit
 
 A Claude-ready implementation guide for Backblaze partners building a B2-backed multi-tenant storage platform — control plane, high-throughput data plane, usage/reporting layer, provisioning workflows, and operational foundation.

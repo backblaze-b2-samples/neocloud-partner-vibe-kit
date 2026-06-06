@@ -1,4 +1,5 @@
 ---
+last_verified: 2026-06-06
 status: reference
 load_when:
   - a tenant or partner is bringing existing AWS S3 tooling or code to B2

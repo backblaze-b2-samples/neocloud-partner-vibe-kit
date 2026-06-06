@@ -1,3 +1,4 @@
+<!-- last_verified: 2026-06-06 -->
 # Security and Tenant Isolation
 
 ## Principles
