@@ -6,12 +6,14 @@ Reference artifacts for B2 API behavior and the canonical B2 usage CSV format. E
 
 | File or directory | Purpose |
 |---|---|
+| `expected-pr-outputs.md` | Per-PR "what good looks like" — files, a golden output, and the acceptance signal for each of the 12 PRs |
 | `api-payloads.md` | Manually curated B2 Native API request and response shapes with notes |
 | `sample-usage-csv/README.md` | CSV column reference and ingestion test guide |
 | `sample-usage-csv/sample-b2-usage.csv` | 30-day sample CSV across two tenants and one operator account |
 
 ## When to use these examples
 
+- **`expected-pr-outputs.md`** — After running a PR prompt, compare the result against the per-PR golden output and acceptance signal. Use it as a review aid alongside `docs/quality-gates.md`.
 - **`api-payloads.md`** — When implementing B2 API calls, refer to this file for the exact request/response shape. For the target neocloud platform API, use `docs/api-contracts.md` instead.
 - **`sample-usage-csv/`** — When implementing CSV ingestion (PR 6), use the sample as a fixture for integration tests. Verify attribution by account ID and bucket name against the documented mapping.
 
