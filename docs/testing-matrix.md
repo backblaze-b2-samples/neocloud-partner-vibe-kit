@@ -1,5 +1,11 @@
 # Testing Matrix
 
+The `static` / `doc` rows below — kit consistency rather than generated-app
+behavior — are enforced mechanically by `scripts/validate_kit.py` (run in CI via
+`.github/workflows/kit-qa.yml`). Run `python scripts/validate_kit.py` before
+opening a PR. The `unit` / `integration` rows describe tests for the platform
+you build with the kit.
+
 | Category | Scenario | Expected result | Test type | Priority |
 |---|---|---|---|---|
 | Roadmap | README, CLAUDE.md, roadmap, and prompts use the 12-PR sequence | Consistent PR numbering | static/doc test | P0 |

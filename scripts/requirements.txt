@@ -1,0 +1,2 @@
+# Dependencies for the kit-QA validator (scripts/validate_kit.py)
+PyYAML>=6.0
