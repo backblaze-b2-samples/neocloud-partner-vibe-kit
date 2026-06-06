@@ -99,6 +99,7 @@ neocloud-vibe-kit/
 │   ├── migrating-from-aws-s3.md           # convert AWS S3 tooling/code to B2
 │   ├── upload-data-plane.md               # upload flows, concurrency, retry
 │   ├── usage-reporting-and-billing.md     # CSV ingestion, attribution, billing
+│   ├── cost-and-tco.md                    # B2 cost model, partner margin, TCO
 │   ├── security-and-tenant-isolation.md   # isolation model and key scoping
 │   ├── small-file-and-throughput-guidance.md   # object size strategy
 │   ├── implementation-roadmap.md          # PR-by-PR roadmap
