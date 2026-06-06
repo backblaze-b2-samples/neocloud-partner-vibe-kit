@@ -1,6 +1,8 @@
-# Neocloud Vibe Kit
+# Neocloud / Partner Vibe Kit
 
-A Claude-ready implementation guide for building a B2-backed neocloud storage control plane, high-throughput data plane, usage/reporting layer, provisioning workflows, and operational foundation.
+A Claude-ready implementation guide for Backblaze partners building a B2-backed multi-tenant storage platform — control plane, high-throughput data plane, usage/reporting layer, provisioning workflows, and operational foundation.
+
+**Who it's for.** Any partner offering storage to their own customers on top of Backblaze B2: neoclouds (AI/GPU clouds), MSPs and managed-service providers, SaaS platforms embedding storage, backup/archive vendors, and resellers. A "neocloud" is the headline example, but the same foundation — Partner API provisioning, account/sub-account tenant isolation, usage attribution, and billing/chargeback — applies across all of these.
 
 This is **not** a simple upload/list/download app and it is **not** a finished production platform. It is a reference package that helps Claude and engineers build the platform correctly, incrementally, and with tests.
 
@@ -17,7 +19,7 @@ The kit has two layers:
 
 ## What this provides vs. the original Vibe Coding Starter Kit
 
-The original Vibe Coding Starter Kit is useful for developer experience, local setup, simple B2 API examples, and basic UI patterns. The Neocloud Vibe Kit tells Claude and engineers how to build a real neocloud foundation: account/sub-account tenant isolation, high-throughput uploads, provisioning, usage reporting, billing/chargeback, audit logs, and operations.
+The original Vibe Coding Starter Kit is useful for developer experience, local setup, simple B2 API examples, and basic UI patterns. The Neocloud / Partner Vibe Kit tells Claude and engineers how to build a real multi-tenant partner storage foundation: account/sub-account tenant isolation, high-throughput uploads, provisioning, usage reporting, billing/chargeback, audit logs, and operations.
 
 ## Canonical implementation roadmap
 

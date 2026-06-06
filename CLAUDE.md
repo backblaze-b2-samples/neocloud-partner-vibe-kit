@@ -1,4 +1,4 @@
-# CLAUDE.md — Neocloud Vibe Kit
+# CLAUDE.md — Neocloud / Partner Vibe Kit
 
 ## Purpose
 
