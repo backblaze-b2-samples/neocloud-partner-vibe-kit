@@ -1,0 +1,3 @@
+# Quickstart concept demo — only needs the AWS SDK for the S3-compatible API.
+# (Everything else is Python standard library: sqlite3, hashlib, urllib.)
+boto3>=1.35.0
