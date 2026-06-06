@@ -4,6 +4,8 @@ One canonical prompt per roadmap PR. Each prompt is self-contained: it states th
 
 Use a prompt by copying its contents into a fresh Claude session along with the files it directs you to read.
 
+After running a prompt, check the result against `examples/expected-pr-outputs.md` — the "what good looks like" reference (files, a golden output, and the acceptance signal) for each PR.
+
 ## PR sequence
 
 Implement in order. Do not skip steps.

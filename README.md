@@ -141,6 +141,7 @@ neocloud-vibe-kit/
 │   └── pr12-operational-hardening.md
 ├── examples/
 │   ├── README.md
+│   ├── expected-pr-outputs.md             # per-PR "what good looks like" reference
 │   ├── api-payloads.md                    # B2 API request/response shapes
 │   └── sample-usage-csv/                  # sample B2 usage CSV with docs
 └── postman/                               # B2 Native API reference collection

@@ -68,6 +68,7 @@ These docs are not tied to one PR. Read them when the task calls for them.
 | The cost/TCO model, partner margin, and how design choices affect B2 cost | `docs/cost-and-tco.md` |
 | Why both B2 Native and S3 are supported | `docs/adr/008-b2-native-vs-s3-compatible.md` |
 | A step-by-step recipe for a common task | `docs/workflow-recipes.md` |
+| What a correct PR result should look like (files, golden output, acceptance) | `examples/expected-pr-outputs.md` |
 | A rationale for a major design decision | `docs/adr/` |
 
 ## Hard invariants
