@@ -177,6 +177,7 @@ These S3 features are documented by Backblaze as not currently supported. The pl
 - **IAM roles / STS** — There is no `AssumeRole` analog. Use B2 application keys directly.
 - **Object Tagging** — `PutObjectTagging` and `GetObjectTagging` either fail or return empty.
 - **Website Configuration** — Static website hosting via S3 is not supported.
+- **Bucket Logging** — S3 server access logging (`PutBucketLogging`) is not supported.
 - **Browser-based POST uploads to presigned URLs** — Standard S3 POST policy uploads do not work.
 - **Object-level ACLs** — Setting per-object ACLs returns 403; objects inherit their bucket's ACL.
 - **SSE-KMS encryption** — Use SSE-B2 or SSE-C instead.

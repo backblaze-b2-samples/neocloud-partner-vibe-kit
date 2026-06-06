@@ -229,6 +229,42 @@ def check_invariant_presence(r: Results):
     r.add("Hard-invariant content present in canonical docs", not missing, "; ".join(missing))
 
 
+# S3 feature keywords used to detect a doc claiming a feature is unsupported when
+# the canonical surface doc (s3-compatible-api.md) treats it as supported — the
+# class of cross-doc contradiction that the lifecycle bug was (it shipped past
+# every structural check).
+_FEATURE_KEYWORDS = ["kms", "tagging", "iam", "acl", "website", "logging",
+                     "sigv2", "browser", "lifecycle", "transition"]
+
+
+def check_feature_support_consistency(r: Results):
+    """The migration guide's "does not support" list must be a subset of the
+    canonical NOT-supported list in s3-compatible-api.md. Catches a doc calling a
+    feature unsupported that the surface doc lists as supported (and vice versa)."""
+    s3 = read(ROOT / "docs/s3-compatible-api.md")
+    guide = read(ROOT / "docs/migrating-from-aws-s3.md")
+
+    not_sec = re.search(r"## Explicitly NOT Supported(.*?)\n---", s3, re.S)
+    canonical = {k for k in _FEATURE_KEYWORDS
+                 if not_sec and k in not_sec.group(1).lower()}
+
+    # Only the explicit "does **not** support: …" enumeration (up to its period),
+    # so prose elsewhere ("Lifecycle rules ARE supported") isn't misread.
+    enum = re.search(r"does \*\*not\*\* support:(.*?)\.\s", guide, re.S)
+    region = enum.group(1).lower() if enum else ""
+    claimed = {k for k in _FEATURE_KEYWORDS if k in region}
+    if "sigv2 is unsupported" in guide.lower():
+        claimed.add("sigv2")
+
+    extra = sorted(claimed - canonical)
+    r.add(
+        "Migration guide's unsupported features ⊆ s3-compatible-api.md NOT-supported",
+        not extra,
+        f"guide calls these unsupported but s3-compatible-api.md doesn't: {extra}"
+        if extra else "",
+    )
+
+
 # --- main -------------------------------------------------------------------
 
 
@@ -243,6 +279,7 @@ def main() -> int:
         check_master_key_guidance,
         check_overlays,
         check_invariant_presence,
+        check_feature_support_consistency,
     ]:
         fn(r)
 
