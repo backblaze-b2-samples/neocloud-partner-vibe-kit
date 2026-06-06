@@ -1,3 +1,4 @@
+<!-- last_verified: 2026-06-06 -->
 # ADR 006 — High-throughput, Not High-IOPS Tiny-object Design
 
 ## Status

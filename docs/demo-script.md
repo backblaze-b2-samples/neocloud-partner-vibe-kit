@@ -1,3 +1,4 @@
+<!-- last_verified: 2026-06-06 -->
 # Demo Script
 
 A walkthrough for demonstrating the Neocloud / Partner Vibe Kit and a reference implementation built from it. The flow takes ~20–30 minutes and is intended for technical audiences (architects, engineers, solution engineers, prospective neocloud operators).

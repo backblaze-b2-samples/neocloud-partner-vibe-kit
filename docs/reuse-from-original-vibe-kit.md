@@ -1,3 +1,4 @@
+<!-- last_verified: 2026-06-06 -->
 # Reuse Guidance from the Original Vibe Coding Starter Kit
 
 Source: https://github.com/backblaze-b2-samples/vibe-coding-starter-kit

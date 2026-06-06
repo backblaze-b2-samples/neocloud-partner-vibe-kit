@@ -1,3 +1,4 @@
+<!-- last_verified: 2026-06-06 -->
 # Known Gaps
 
 This kit is an architecture and implementation guide for building a B2-backed neocloud platform. It is not a finished platform. This document is the honest inventory of what is intentionally missing, what is candidate material pending validation, what requires action outside the kit, and what is explicitly out of scope.

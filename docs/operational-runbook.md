@@ -1,3 +1,4 @@
+<!-- last_verified: 2026-06-06 -->
 # Operational Runbook
 
 This runbook covers recurring operational incidents on the neocloud platform. Each section follows the pattern: **Symptoms → Investigate → Remediate → Prevent**.

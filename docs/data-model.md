@@ -1,4 +1,5 @@
 ---
+last_verified: 2026-06-06
 status: reference
 source_of_truth_for:
   - target entities

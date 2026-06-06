@@ -1,3 +1,4 @@
+<!-- last_verified: 2026-06-06 -->
 # Testing Matrix
 
 The `static` / `doc` rows below — kit consistency rather than generated-app

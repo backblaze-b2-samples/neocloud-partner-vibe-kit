@@ -265,6 +265,28 @@ def check_feature_support_consistency(r: Results):
     )
 
 
+# System-of-record docs that must carry a freshness date. Addresses
+# known-gaps.md §14 (documentation-implementation drift). We assert the header
+# EXISTS and is a valid date — not that it's recent — so CI never time-bombs.
+_FRESHNESS_RE = re.compile(r"last_verified:?\s*(\d{4}-\d{2}-\d{2})")
+
+
+def check_freshness_headers(r: Results):
+    targets = ["README.md", "CLAUDE.md", "START_HERE.md"]
+    targets += [f"docs/{p.name}" for p in sorted((ROOT / "docs").glob("*.md"))]
+    targets += [f"docs/adr/{p.name}" for p in sorted((ROOT / "docs/adr").glob("*.md"))]
+    missing = []
+    for f in targets:
+        head = "\n".join(read(ROOT / f).splitlines()[:8])
+        if not _FRESHNESS_RE.search(head):
+            missing.append(f)
+    r.add(
+        "System-of-record docs carry a last_verified date",
+        not missing,
+        f"missing/invalid: {missing}" if missing else "",
+    )
+
+
 # --- main -------------------------------------------------------------------
 
 
@@ -280,6 +302,7 @@ def main() -> int:
         check_overlays,
         check_invariant_presence,
         check_feature_support_consistency,
+        check_freshness_headers,
     ]:
         fn(r)
 

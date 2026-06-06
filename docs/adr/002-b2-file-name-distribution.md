@@ -1,3 +1,4 @@
+<!-- last_verified: 2026-06-06 -->
 # ADR 002 — B2 File-name Distribution
 
 ## Status

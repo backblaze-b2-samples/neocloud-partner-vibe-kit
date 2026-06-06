@@ -1,4 +1,5 @@
 ---
+last_verified: 2026-06-06
 status: reference
 source_of_truth_for:
   - PR review gates
@@ -33,6 +34,8 @@ source_of_truth_for:
 - Validate JSON artifacts.
 - Run the kit validator: `python scripts/validate_kit.py` (enforces the static/doc gates in `docs/testing-matrix.md`; also runs in CI via `.github/workflows/kit-qa.yml`).
 - Update docs if contracts changed.
+- Bump the `last_verified` date on any system-of-record doc you changed (the
+  validator requires every such doc to carry one).
 - Summarize files, behavior, tests, commands, risks, and follow-ups.
 
 ## Neocloud-specific gates
