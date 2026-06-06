@@ -65,6 +65,7 @@ These docs are not tied to one PR. Read them when the task calls for them.
 | Pre-production security review | `docs/security-review-checklist.md` |
 | S3-compatible API surface (supported ops, auth, endpoints) | `docs/s3-compatible-api.md` |
 | To convert existing AWS S3 tooling/code over to B2 (auth, keys, checksums, prefixes) | `docs/migrating-from-aws-s3.md` |
+| The cost/TCO model, partner margin, and how design choices affect B2 cost | `docs/cost-and-tco.md` |
 | Why both B2 Native and S3 are supported | `docs/adr/008-b2-native-vs-s3-compatible.md` |
 | A step-by-step recipe for a common task | `docs/workflow-recipes.md` |
 | A rationale for a major design decision | `docs/adr/` |

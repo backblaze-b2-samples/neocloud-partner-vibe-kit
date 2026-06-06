@@ -22,6 +22,7 @@ When docs conflict, use this order:
 6. `docs/upload-data-plane.md` for upload defaults
 7. `docs/small-file-and-throughput-guidance.md` for high-throughput and small-file guidance
 8. `docs/usage-reporting-and-billing.md` for usage attribution and billing
+8a. `docs/cost-and-tco.md` for the cost model and partner margin (defers to the live Backblaze pricing page for rates)
 9. `docs/security-and-tenant-isolation.md` for isolation enforcement
 10. `docs/configuration-reference.md` for configurable settings (defers to upstream docs for the actual values)
 11. `docs/operational-runbook.md` for incident response procedures
