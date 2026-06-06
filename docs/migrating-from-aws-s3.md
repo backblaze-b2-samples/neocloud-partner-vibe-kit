@@ -96,36 +96,37 @@ prefix enumeration (`docs/common-pitfalls.md` §8 hot spots, §9 listing).
 
 ## 4. Checksums and integrity (the part most migrations miss)
 
-AWS tooling routinely treats **`ETag` as the object's MD5**. That assumption
-breaks on B2 (and on AWS itself for multipart/encrypted objects):
+AWS tooling routinely treats **`ETag` as the object's MD5** — an assumption that
+breaks for multipart/encrypted objects on B2 *and* on AWS. The behavior below was
+**verified live against Backblaze B2 `us-west-004` on 2026-06-06** (boto3/botocore
+1.43).
 
-- **ETag is MD5 only** for a single-part, unencrypted `PutObject`. For a
-  **multipart** upload the ETag is `md5(concat(part_md5s))-<partCount>` — not the
-  object's MD5. With SSE-C it is not an MD5 at all. **Do not** use ETag as a
-  content hash for integrity verification across multipart objects.
-- **B2 Native API** verifies object integrity with **SHA-1**
-  (`X-Bz-Content-Sha1` per file; per-part SHA-1 plus an array at
-  `b2_finish_large_file`). The platform's own data plane (PR 3) uses this — store
-  the checksum in metadata, not by reading back the ETag.
-- **S3-compatible PUT** integrity: send **`Content-MD5`** (base64 MD5) for
-  single-part end-to-end verification. For multipart, validate **per part**, not
-  via the final ETag.
+**ETag**
+- **Single-part, unencrypted `PutObject`:** ETag **is** the hex MD5 of the body.
+  *(verified)*
+- **Multipart:** ETag is `md5(concat(part_md5s))-<partCount>` (e.g. `…-2`) — **not**
+  the whole-object MD5. *(verified — the formula matched exactly.)* With SSE-C it is
+  not an MD5 at all. **Never** use ETag as a content hash across multipart objects.
 
-**Modern AWS SDK gotcha (call this out in onboarding).** Recent AWS SDKs and the
-AWS CLI enable **automatic data-integrity checksums** by default (CRC32 via
-`x-amz-checksum-*` trailers, `request_checksum_calculation = when_supported`).
-Against a non-AWS S3 endpoint this can surface as signature or
-`x-amz-content-sha256` / checksum errors after an SDK upgrade. If you see those:
+**S3 additional checksums (`x-amz-checksum-*`) — supported on B2.** B2's S3
+endpoint **accepts and returns CRC32, CRC32C, SHA1, and SHA256** *(all four
+verified: accepted on `PutObject(ChecksumAlgorithm=…)`, returned on
+`HeadObject(ChecksumMode='ENABLED')`)*. Practical consequences:
 
-- boto3 / AWS CLI v2: set `request_checksum_calculation = when_required` and
-  `response_checksum_validation = when_required` (in `~/.aws/config`, or env
-  `AWS_REQUEST_CHECKSUM_CALCULATION=when_required` /
-  `AWS_RESPONSE_CHECKSUM_VALIDATION=when_required`).
+- Modern boto3 / AWS CLI default to attaching a **CRC32** checksum
+  (`request_checksum_calculation = when_supported`). **This works against B2
+  as-is** — B2 accepts and stores it; no `when_required` workaround is needed.
+  *(verified: a default `PutObject` stored `ChecksumCRC32`.)*
+- **CRC32C** needs the `botocore[crt]` extra installed **client-side** (to compute
+  the digest locally) — a client dependency, not a B2 limitation.
+- For explicit end-to-end integrity, pass `ChecksumAlgorithm='SHA256'` (or CRC32)
+  on PUT and read it back with `ChecksumMode='ENABLED'`. **`Content-MD5`** on PUT
+  is also accepted *(verified)* and is the most portable single-part option.
 
-Confirm which `x-amz-checksum-*` algorithms Backblaze's S3 endpoint honors
-against your region before relying on them; **`Content-MD5` + per-part
-validation is the portable baseline.** (Postman/live-validation status is
-tracked per `docs/adr/005-postman-is-reference-not-source-of-truth.md`.)
+**B2 Native API** verifies integrity with **SHA-1** (`X-Bz-Content-Sha1` per file;
+per-part SHA-1 plus an array at `b2_finish_large_file`). The platform's own data
+plane (PR 3) uses this — store the checksum in metadata, not by reading back the
+ETag.
 
 ## 5. Multipart tuning
 
@@ -192,26 +193,22 @@ s3 = boto3.client(
     region_name="us-west-004",
     aws_access_key_id=APPLICATION_KEY_ID,      # B2 keyID
     aws_secret_access_key=APPLICATION_KEY,     # B2 applicationKey
-    config=Config(
-        signature_version="s3v4",
-        request_checksum_calculation="when_required",   # avoid CRC-trailer surprises
-        response_checksum_validation="when_required",
-    ),
+    config=Config(signature_version="s3v4"),   # SigV4 is the only required override
 )
+# B2 supports the default CRC32 integrity checksum (§4) — no checksum config
+# needed. CRC32C additionally requires `pip install botocore[crt]` client-side.
 ```
 
 **AWS CLI**
 ```bash
 aws configure set default.s3.signature_version s3v4
-export AWS_REQUEST_CHECKSUM_CALCULATION=when_required
 aws --endpoint-url https://s3.us-west-004.backblazeb2.com \
     s3 ls s3://my-bucket/
 ```
 
 **rclone** — either the S3 backend (`provider = Other`,
 `endpoint = s3.us-west-004.backblazeb2.com`, SigV4) or rclone's **native `b2`
-backend** (uses keyID/applicationKey directly; often simpler and avoids the S3
-checksum-trailer issue entirely).
+backend** (uses keyID/applicationKey directly).
 
 **MinIO `mc`**
 ```bash
@@ -254,8 +251,8 @@ Provisioning a tenant for S3 access is a standard flow — see
 - [ ] Client uses `s3.<region>.backblazeb2.com` and SigV4; SigV2 attempt is rejected.
 - [ ] Tenant key (not the master key) is the S3 credential; capabilities are least-privilege.
 - [ ] Generated keys are `distribution_id`-first; no timestamp/tenant prefix on high-volume writes.
-- [ ] Integrity verification does not assume `ETag == MD5`; uses `Content-MD5`/per-part or B2-Native SHA-1.
-- [ ] SDK auto-checksum behavior is set to `when_required` (or validated against the endpoint).
+- [ ] Integrity verification does not assume `ETag == MD5`; uses an `x-amz-checksum-*` algorithm (CRC32/CRC32C/SHA1/SHA256 — all supported by B2), `Content-MD5`, or B2-Native SHA-1.
+- [ ] If using CRC32C, the client has `botocore[crt]` installed (B2 supports it; the digest is computed client-side).
 - [ ] No code path depends on SSE-KMS, object tagging, IAM, object ACLs, or website config.
 - [ ] Lifecycle: expiration rules ported as-is; storage-class transition rules removed/reworked (B2 has one storage class).
 - [ ] Multipart part size tuned above the 8 MB SDK default for large transfers; aborts on failure.
