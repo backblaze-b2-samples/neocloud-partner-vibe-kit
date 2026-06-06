@@ -55,7 +55,8 @@ account — see `docs/adr/008-b2-native-vs-s3-compatible.md`.
 
 ## 2. Authentication: SigV4 only
 
-Force SigV4 in every client. Backblaze does **not** support SigV2.
+Force SigV4 in every client. Backblaze does **not** support SigV2 *(verified: a
+SigV2 request is rejected by B2 with `InvalidRequest`)*.
 
 - boto3 / botocore: `Config(signature_version="s3v4")`
 - AWS CLI: `aws configure set default.s3.signature_version s3v4`
@@ -124,7 +125,9 @@ verified: accepted on `PutObject(ChecksumAlgorithm=…)`, returned on
   is also accepted *(verified)* and is the most portable single-part option.
 
 **B2 Native API** verifies integrity with **SHA-1** (`X-Bz-Content-Sha1` per file;
-per-part SHA-1 plus an array at `b2_finish_large_file`). The platform's own data
+per-part SHA-1 plus an array at `b2_finish_large_file`). *(Verified: a correct
+`X-Bz-Content-Sha1` is accepted; a wrong one is rejected `400 bad_request:
+Checksum did not match data received`.)* The platform's own data
 plane (PR 3) uses this — store the checksum in metadata, not by reading back the
 ETag.
 
@@ -154,6 +157,13 @@ configuration**, and **bucket logging**. SigV2 is unsupported. If incoming
 tooling depends on any of these, redesign that dependency before migrating.
 (Lifecycle rules **are** supported — see §6b.) Full surface:
 `docs/s3-compatible-api.md` §Explicitly NOT Supported.
+
+*Verified live (2026-06-06):* a SigV2 request → `InvalidRequest`; object ACL →
+`NotImplemented`; SSE-KMS → `InvalidArgument`; `PutBucketWebsite` →
+`NotImplemented`. **Tagging is a silent trap:** `PutObjectTagging` returns **200
+but discards the tags** (`GetObjectTagging` comes back empty), and `PutObject`
+with a `Tagging` header is rejected `InvalidArgument` — so a migrating app gets no
+error but loses its tags. Treat tagging as unavailable.
 
 ## 6b. Lifecycle rules — supported, but reshaped for B2
 
