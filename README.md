@@ -80,6 +80,7 @@ neocloud-vibe-kit/
 │   ├── data-model.md                      # canonical entities and columns
 │   ├── provisioning-and-partner-api.md    # tenant lifecycle and Partner API
 │   ├── s3-compatible-api.md               # S3 API surface, supported ops, auth
+│   ├── migrating-from-aws-s3.md           # convert AWS S3 tooling/code to B2
 │   ├── upload-data-plane.md               # upload flows, concurrency, retry
 │   ├── usage-reporting-and-billing.md     # CSV ingestion, attribution, billing
 │   ├── security-and-tenant-isolation.md   # isolation model and key scoping

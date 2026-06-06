@@ -17,6 +17,7 @@ When docs conflict, use this order:
 5. `docs/provisioning-and-partner-api.md` for Partner API and provider account guidance
 5a. `docs/s3-compatible-api.md` for the S3-compatible API surface, supported operations, and tenant-facing usage
 5b. `docs/adr/008-b2-native-vs-s3-compatible.md` for the decision rationale behind supporting both API surfaces
+5c. `docs/migrating-from-aws-s3.md` for converting existing AWS S3 tooling/code to B2 (defers to `s3-compatible-api.md` for the surface and ADR 002 for keys)
 6. `docs/upload-data-plane.md` for upload defaults
 7. `docs/small-file-and-throughput-guidance.md` for high-throughput and small-file guidance
 8. `docs/usage-reporting-and-billing.md` for usage attribution and billing
