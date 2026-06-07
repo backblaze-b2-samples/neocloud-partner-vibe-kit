@@ -133,13 +133,20 @@ Provider keys are B2 application keys created inside a provisioned B2 customer a
 - `name`
 - `role` (the RBAC role — see `docs/security-and-tenant-isolation.md` §Roles and permissions)
 - `scopes` (optional finer-grained narrowing *within* the role; the `role` is the primary authority)
+- `key_hash` (a one-way hash of the secret key value; see below)
 - `status` (`active` | `revoked`)
 - `created_at`
+- `last_used_at`
 - `revoked_at`
 
 Application-level platform API keys. Authorization is **role-based**: the `role`
 gates the neocloud application API. These are distinct from `provider_keys`,
 which are B2 application keys that gate access to B2 itself.
+
+The `id` is the public identifier. The **secret value is shown exactly once at
+creation and is never persisted** — only its hash is stored in `key_hash`, and
+authentication compares a hash of the presented secret against it. `scopes` is
+*not* a secret store. Update `last_used_at` on successful auth.
 
 ### service_accounts
 

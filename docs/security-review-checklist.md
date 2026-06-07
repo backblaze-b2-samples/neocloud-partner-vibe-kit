@@ -32,10 +32,11 @@ This document materializes the review scope referenced in `docs/known-gaps.md` �
 
 ### Platform API keys
 
-- [ ] API key values are returned exactly once at creation.
-- [ ] API key values are stored only as hashes in `api_keys.scopes` (or equivalent column).
+- [ ] API key secret values are returned exactly once at creation and never persisted.
+- [ ] The secret is stored only as a one-way hash in `api_keys.key_hash` — never in plaintext, and never in `api_keys.scopes` (which is for permission-narrowing, not secrets).
+- [ ] Authentication presents the key id plus secret; the platform compares a hash of the secret against `api_keys.key_hash` (the id alone is not a credential).
 - [ ] Revoked API keys return `401` on the next use — no lag.
-- [ ] API key creation, revocation, and last-used-at updates are audited.
+- [ ] API key creation, revocation, and `last_used_at` updates are audited.
 
 ---
 
