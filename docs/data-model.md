@@ -27,6 +27,24 @@ usage_event many--1 tenant/project/object
 
 Tenant isolation is account/sub-account-driven. A tenant may have multiple storage accounts when the customer needs multiple regions.
 
+### Cross-table ownership invariant (normative)
+
+Several child tables (`buckets`, `objects`, `provider_keys`, `usage_events`,
+`upload_sessions`, …) carry a denormalized `tenant_id` **in addition to** a
+foreign key to a parent that also has a tenant. This is a query-scoping
+convenience, **not** an independent source of truth.
+
+- The **parent chain is authoritative.** A row's `tenant_id` MUST equal the
+  `tenant_id` of every parent it references. For example, a `bucket`'s
+  `tenant_id` must equal its `storage_account`'s `tenant_id`; an `object`'s must
+  equal its `project`'s, `bucket`'s, and `storage_account`'s.
+- This invariant MUST be enforced on write — by the repository layer, a DB
+  trigger, or composite foreign keys — because plain single-column FKs do **not**
+  prevent a mismatched `tenant_id`. A mismatch is an isolation bug, not a valid
+  state; creating such a row is an error.
+- Authorization and tenant scoping read the denormalized `tenant_id` for
+  performance, which is safe only because the write-time invariant holds.
+
 ## Canonical entities
 
 ### groups
@@ -148,7 +166,7 @@ Projects are application-level metadata boundaries. They are not isolated by pat
 - `created_at`
 - `deleted_at`
 
-Object ownership comes from metadata. The physical B2 file name is internal and uses `distribution_id` for high-scale generated names.
+Object ownership comes from metadata. The physical B2 file name is internal and uses `distribution_id` for high-scale generated names; the exact builder (input, algorithm, length, and `safe_filename` rules) is pinned in `docs/adr/002-b2-file-name-distribution.md` §Specification.
 
 ### upload_sessions
 

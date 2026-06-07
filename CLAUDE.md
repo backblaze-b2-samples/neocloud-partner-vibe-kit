@@ -116,7 +116,7 @@ Default physical B2 file-name layout:
 {distribution_id}/tenants/{tenant_id}/projects/{project_id}/objects/{object_id}/{safe_filename}
 ```
 
-`distribution_id` is a stable hash-derived value near the beginning of the B2 file name. Use 2 hex characters by default and allow 4 for extreme-scale workloads. Store the physical B2 file name in metadata. Show logical names to users.
+`distribution_id` is `SHA-256(object_id)` in lowercase hex, truncated to 2 characters by default (4 for extreme-scale workloads). The builder is deterministic; the normative spec — distribution_id input/algorithm and the `safe_filename` rules — is in `docs/adr/002-b2-file-name-distribution.md` §Specification. Store the physical B2 file name in metadata. Show logical names to users.
 
 ## Before editing code
 
