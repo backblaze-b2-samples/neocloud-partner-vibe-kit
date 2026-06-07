@@ -1,6 +1,10 @@
 ---
 status: context-pack
 token_note: Short compressed context. Open full docs only when needed.
+source_of_truth:
+  - docs/usage-reporting-and-billing.md
+  - docs/configuration-reference.md
+  - docs/data-model.md
 ---
 
 # Billing Context

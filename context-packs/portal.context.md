@@ -1,6 +1,11 @@
 ---
 status: context-pack
 token_note: Short compressed context. Open full docs only when needed.
+source_of_truth:
+  - docs/api-contracts.md
+  - docs/configuration-reference.md
+  - docs/security-and-tenant-isolation.md
+  - docs/data-model.md
 ---
 
 # Portal Context

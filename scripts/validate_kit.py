@@ -287,6 +287,24 @@ def check_freshness_headers(r: Results):
     )
 
 
+_DOCS_REF_RE = re.compile(r"docs/[A-Za-z0-9/_-]+\.md")
+
+
+def check_context_pack_routing(r: Results):
+    """Every context pack must point at a full source-of-truth doc. Without this,
+    a token-minimal builder (which the kit encourages) stops at the compressed
+    pack and reinvents specs that already exist in the full docs."""
+    missing = [
+        p.name for p in sorted((ROOT / "context-packs").glob("*.context.md"))
+        if not _DOCS_REF_RE.search(read(p))
+    ]
+    r.add(
+        "Context packs route to a source-of-truth doc",
+        not missing,
+        f"no docs/ reference: {missing}" if missing else "",
+    )
+
+
 # --- main -------------------------------------------------------------------
 
 
@@ -302,6 +320,7 @@ def main() -> int:
         check_overlays,
         check_invariant_presence,
         check_feature_support_consistency,
+        check_context_pack_routing,
         check_freshness_headers,
     ]:
         fn(r)
