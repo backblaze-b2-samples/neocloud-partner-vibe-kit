@@ -12,14 +12,48 @@
 - **Least privilege everywhere.** Every credential — platform API key, provider key, tenant-facing S3 access — is scoped to the minimum capabilities required for its workload.
 - **The operator master application key is for the platform's control plane only.** It must never be used as a tenant credential, exposed to tenants, or configured into a tenant's S3 client. The isolation boundary is the same for B2 Native and S3-compatible APIs.
 
-## Roles
+## Roles and permissions
 
-- `platform_admin`
-- `tenant_admin`
-- `developer`
-- `viewer`
-- `billing_viewer`
-- `support_operator`
+Platform authorization is **role-based (RBAC)**. Every neocloud application API
+request resolves to a principal whose `role` comes from its platform API key (see
+`docs/data-model.md` `api_keys` / `service_accounts`). These roles gate the
+neocloud *application* API and are distinct from B2 provider-key *capabilities*
+(§Key scoping), which gate access to B2 itself.
+
+### Permission matrix (normative)
+
+| Role | object:read | object:write / object:delete | tenant:manage | admin | billing:read |
+|------|:-:|:-:|:-:|:-:|:-:|
+| `platform_admin` | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `tenant_admin` | ✓ | ✓ | ✓ |  |  |
+| `developer` | ✓ | ✓ |  |  |  |
+| `viewer` | ✓ |  |  |  |  |
+| `billing_viewer` |  |  |  |  | ✓ |
+| `support_operator` | ✓ |  |  |  |  |
+
+Permission meanings:
+- `object:read` / `object:write` / `object:delete` — tenant data-plane object operations.
+- `tenant:manage` — manage resources **within a tenant**: projects, buckets, tenant API keys, provider keys.
+- `admin` — platform/operator routes: tenant provisioning, storage-account lifecycle, cross-tenant views.
+- `billing:read` — read usage and billing reports.
+
+### Tenant scoping
+
+A non-`admin` permission is confined to the principal's own `tenant_id`. A
+`developer` or `tenant_admin` for tenant A may never read or mutate tenant B's
+resources — even with the right role, and even if they guess IDs. Only
+`platform_admin` (the holder of `admin`) may act across tenants, and only on
+`/admin/*` routes. Every cross-tenant attempt is denied and audited.
+
+### Dev auth mode
+
+In local/dev, a request authenticates with a platform API key whose id maps to an
+`api_keys` row; the principal's `tenant_id`, optional `project_id`, and `role`
+are read from that row. Production replaces the token **issuer** with the
+operator's identity provider (operator-defined — see `docs/known-gaps.md`), but
+the resolved principal shape (`tenant_id`, `project_id`, `role`) is unchanged.
+Invalid or revoked keys fail closed with a logged `failed auth` / `access denied`
+audit event.
 
 ## Account-driven isolation
 
