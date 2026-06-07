@@ -1,6 +1,6 @@
 # Security Policy
 
-The Neocloud / Partner Vibe Kit is an implementation **guide** — documentation,
+The Neocloud/Partner Vibe Kit is an implementation **guide** — documentation,
 prompts, context packs, and reference Postman collections. It contains no running
 service. Even so, we take the security of the kit's *guidance* seriously, because
 teams build real multi-tenant storage platforms from it.

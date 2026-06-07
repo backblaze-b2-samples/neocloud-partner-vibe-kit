@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Kit-QA validator for the Neocloud / Partner Vibe Kit.
+"""Kit-QA validator for the Neocloud/Partner Vibe Kit.
 
 This kit is a content product (docs, prompts, context-packs, overlays, Postman
 collections), so "tests" are static/doc consistency checks. This script
@@ -306,7 +306,7 @@ def main() -> int:
     ]:
         fn(r)
 
-    print("Neocloud / Partner Vibe Kit — validation\n")
+    print("Neocloud/Partner Vibe Kit — validation\n")
     for name, ok, detail in r.checks:
         line = f"  {'PASS' if ok else 'FAIL'}  {name}"
         if not ok and detail:

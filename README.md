@@ -1,5 +1,5 @@
 <!-- last_verified: 2026-06-06 -->
-# Neocloud / Partner Vibe Kit
+# Neocloud/Partner Vibe Kit
 
 A Claude-ready implementation guide for Backblaze partners building a B2-backed multi-tenant storage platform — control plane, high-throughput data plane, usage/reporting layer, provisioning workflows, and operational foundation.
 
@@ -32,7 +32,7 @@ The kit has two layers:
 
 ## What this provides vs. the original Vibe Coding Starter Kit
 
-The original Vibe Coding Starter Kit is useful for developer experience, local setup, simple B2 API examples, and basic UI patterns. The Neocloud / Partner Vibe Kit tells Claude and engineers how to build a real multi-tenant partner storage foundation: account/sub-account tenant isolation, high-throughput uploads, provisioning, usage reporting, billing/chargeback, audit logs, and operations.
+The original Vibe Coding Starter Kit is useful for developer experience, local setup, simple B2 API examples, and basic UI patterns. The Neocloud/Partner Vibe Kit tells Claude and engineers how to build a real multi-tenant partner storage foundation: account/sub-account tenant isolation, high-throughput uploads, provisioning, usage reporting, billing/chargeback, audit logs, and operations.
 
 ## Canonical implementation roadmap
 

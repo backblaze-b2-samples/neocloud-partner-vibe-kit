@@ -1,7 +1,7 @@
 <!-- last_verified: 2026-06-06 -->
 # Glossary
 
-Terms used across the Neocloud / Partner Vibe Kit. When a term has both a Neocloud-specific meaning and a Backblaze-side meaning, both are listed.
+Terms used across the Neocloud/Partner Vibe Kit. When a term has both a Neocloud-specific meaning and a Backblaze-side meaning, both are listed.
 
 For canonical entity definitions (columns, relationships), see `docs/data-model.md`. For the Partner API surface and composite operations, see `docs/provisioning-and-partner-api.md`.
 

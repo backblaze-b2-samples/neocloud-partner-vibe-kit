@@ -1,7 +1,7 @@
 <!-- last_verified: 2026-06-06 -->
 # Quickstart — 5-minute concept demo
 
-**This is not the platform.** The Neocloud / Partner Vibe Kit is an
+**This is not the platform.** The Neocloud/Partner Vibe Kit is an
 implementation *guide* (see `known-gaps.md` §1 — no application code by design).
 This `quickstart/` is a tiny, runnable demo so you can watch the kit's core
 **invariants** work against a real Backblaze B2 bucket *before* you build the real
