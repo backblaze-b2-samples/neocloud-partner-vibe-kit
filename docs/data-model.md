@@ -22,6 +22,7 @@ project many--1 tenant
 object many--1 project
 object many--1 bucket
 provider_key many--1 storage_account
+service_account 1--many api_keys
 usage_event many--1 tenant/project/object
 ```
 
@@ -126,16 +127,32 @@ Provider keys are B2 application keys created inside a provisioned B2 customer a
 ### api_keys
 
 - `id`
-- `tenant_id`
+- `tenant_id` (NULL for platform-scoped keys, e.g. a `platform_admin` key)
 - `project_id`
-- `service_account_id`
+- `service_account_id` (the machine principal that owns the key — see `service_accounts`)
 - `name`
-- `scopes`
-- `status`
+- `role` (the RBAC role — see `docs/security-and-tenant-isolation.md` §Roles and permissions)
+- `scopes` (optional finer-grained narrowing *within* the role; the `role` is the primary authority)
+- `status` (`active` | `revoked`)
 - `created_at`
 - `revoked_at`
 
-Application-level service API keys for the neocloud platform.
+Application-level platform API keys. Authorization is **role-based**: the `role`
+gates the neocloud application API. These are distinct from `provider_keys`,
+which are B2 application keys that gate access to B2 itself.
+
+### service_accounts
+
+- `id`
+- `tenant_id` (NULL for platform/operator service accounts)
+- `name`
+- `default_role`
+- `status`
+- `created_at`
+
+A non-human principal (a service or integration) that owns one or more
+`api_keys`, referenced by `api_keys.service_account_id`. Human identities are
+operator-defined (see `docs/known-gaps.md`).
 
 ### projects
 
