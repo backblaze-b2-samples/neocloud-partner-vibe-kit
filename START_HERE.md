@@ -6,7 +6,7 @@ token_note: Read this first. It tells Claude which minimal files to load for eac
 
 # START_HERE.md
 
-Use this file to reduce token usage. Do **not** load the entire Neocloud / Partner Vibe Kit by default.
+Use this file to reduce token usage. Do **not** load the entire Neocloud/Partner Vibe Kit by default.
 
 Start with:
 

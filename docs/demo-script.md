@@ -1,7 +1,7 @@
 <!-- last_verified: 2026-06-06 -->
 # Demo Script
 
-A walkthrough for demonstrating the Neocloud / Partner Vibe Kit and a reference implementation built from it. The flow takes ~20–30 minutes and is intended for technical audiences (architects, engineers, solution engineers, prospective neocloud operators).
+A walkthrough for demonstrating the Neocloud/Partner Vibe Kit and a reference implementation built from it. The flow takes ~20–30 minutes and is intended for technical audiences (architects, engineers, solution engineers, prospective neocloud operators).
 
 The script assumes:
 - A reference implementation built from PRs 1–9 is running locally with `STORAGE_PROVIDER=mock`.
@@ -29,9 +29,9 @@ If the implementation is not built, the script still functions as an architectur
 
 **Say:** The original Backblaze B2 starter kit demonstrates basic upload, list, and download. That is sufficient for one developer demoing one bucket. It does not scale to a neocloud operator who needs to provision dozens of tenants, isolate their data, attribute usage for billing, and operate the platform reliably.
 
-The Neocloud / Partner Vibe Kit is the architecture and implementation guide for that next step. It is not a finished product — it is the blueprint and the prompts to build the platform incrementally.
+The Neocloud/Partner Vibe Kit is the architecture and implementation guide for that next step. It is not a finished product — it is the blueprint and the prompts to build the platform incrementally.
 
-**Takeaway:** Two distinct problems, two distinct kits. The starter kit is for B2 API familiarity. The Neocloud / Partner Vibe Kit is for building a multi-tenant storage platform on top of B2.
+**Takeaway:** Two distinct problems, two distinct kits. The starter kit is for B2 API familiarity. The Neocloud/Partner Vibe Kit is for building a multi-tenant storage platform on top of B2.
 
 ---
 

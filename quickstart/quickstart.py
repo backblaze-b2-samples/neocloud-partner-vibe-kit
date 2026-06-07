@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Neocloud / Partner Vibe Kit — 5-minute concept demo.
+"""Neocloud/Partner Vibe Kit — 5-minute concept demo.
 
 This is NOT the platform. It is a tiny, runnable demonstration of the kit's core
 invariants against a real Backblaze B2 bucket, so you can see the patterns work
@@ -100,7 +100,7 @@ def main() -> int:
     )
 
     tenant, project = "tnt_demo", "prj_demo"
-    print(f"\nNeocloud / Partner Vibe Kit — concept demo (run {run})")
+    print(f"\nNeocloud/Partner Vibe Kit — concept demo (run {run})")
     print(f"bucket={bucket}  region={region}\n" + "-" * 60)
 
     # 1. Upload three objects under distribution_id-first names.
