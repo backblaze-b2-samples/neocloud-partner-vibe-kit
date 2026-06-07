@@ -1,6 +1,11 @@
 ---
 status: context-pack
 token_note: Short compressed context. Open full docs only when needed.
+source_of_truth:
+  - docs/upload-data-plane.md
+  - docs/configuration-reference.md
+  - docs/adr/004-multipart-upload-defaults.md
+  - docs/s3-compatible-api.md
 ---
 
 # Uploads Context

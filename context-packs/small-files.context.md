@@ -1,6 +1,10 @@
 ---
 status: context-pack
 token_note: Short compressed context. Open full docs only when needed.
+source_of_truth:
+  - docs/small-file-and-throughput-guidance.md
+  - docs/configuration-reference.md
+  - docs/upload-data-plane.md
 ---
 
 # Small Files Context

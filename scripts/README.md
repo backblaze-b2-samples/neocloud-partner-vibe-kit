@@ -33,6 +33,7 @@ It runs in CI on every push/PR via `.github/workflows/kit-qa.yml`.
 | Hard-invariant content present | An invariant section silently dropped from a canonical doc |
 | Feature-support consistency | A doc calling an S3 feature unsupported that `s3-compatible-api.md` lists as supported (the lifecycle-bug class) |
 | Freshness headers | A system-of-record doc (`README`, `CLAUDE.md`, `START_HERE.md`, `docs/*.md`, `docs/adr/*.md`) missing its `last_verified` date |
+| Context-pack routing | A context pack that doesn't point at any full source-of-truth doc (so a token-minimal builder reinvents specs that already exist) |
 
 When you add a prompt, doc, overlay key, or Postman variable, run the validator
 before opening the PR — it's the same gate CI enforces.
