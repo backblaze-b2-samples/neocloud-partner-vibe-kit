@@ -1,5 +1,5 @@
 ---
-last_verified: 2026-06-06
+last_verified: 2026-06-09
 status: reference
 load_when:
   - choosing customer workflow shape

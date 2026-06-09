@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-06-06 -->
+<!-- last_verified: 2026-06-09 -->
 # Expected PR Outputs
 
 A "what good looks like" reference for each of the 12 roadmap PRs. Use it to

@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-06-06 -->
+<!-- last_verified: 2026-06-09 -->
 # Provisioning and Partner API
 
 > Term definitions (Partner API, Group, alias/memberEmail, eject, storage account, etc.) are in `docs/glossary.md`. The operator-side prerequisite steps (getting Partner API enabled by Backblaze, creating Groups in the website) are in `docs/first-time-operator-setup.md`.

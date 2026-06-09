@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-06-06 -->
+<!-- last_verified: 2026-06-09 -->
 # Glossary
 
 Terms used across the Neocloud/Partner Vibe Kit. When a term has both a Neocloud-specific meaning and a Backblaze-side meaning, both are listed.

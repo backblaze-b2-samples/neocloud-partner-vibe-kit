@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-06-06 -->
+<!-- last_verified: 2026-06-09 -->
 # Configuration Reference
 
 All configurable settings for the neocloud platform target architecture. Defaults shown are the recommended values from `CLAUDE.md` §Upload Defaults and the customer overlay template; customer overlays may override values in the **Configurable defaults** category, but not in the **Hard invariant** category.

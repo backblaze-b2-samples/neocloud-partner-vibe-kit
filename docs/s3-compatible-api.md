@@ -1,5 +1,5 @@
 ---
-last_verified: 2026-06-06
+last_verified: 2026-06-09
 status: reference
 source_of_truth_for:
   - S3-compatible API surface

@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-06-06 -->
+<!-- last_verified: 2026-06-09 -->
 # Common Pitfalls
 
 Recurring mistakes when implementing or reviewing the neocloud platform. Each pitfall lists the wrong pattern, why it's wrong, and the right pattern. Use this doc as a PR review aid alongside `docs/quality-gates.md`.

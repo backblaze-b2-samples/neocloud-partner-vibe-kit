@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-06-06 -->
+<!-- last_verified: 2026-06-09 -->
 # Security Review Checklist
 
 Pre-production security review for a neocloud platform built from this kit. Use this checklist before exposing the platform to any real tenant or production data.

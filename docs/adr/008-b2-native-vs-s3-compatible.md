@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-06-06 -->
+<!-- last_verified: 2026-06-09 -->
 # ADR 008 — Tenants May Use Either the B2 Native or S3-Compatible API
 
 **Status:** Accepted
