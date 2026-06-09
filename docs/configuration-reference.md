@@ -88,7 +88,7 @@ The Partner API region code (`storage_accounts.region`) is **not** an S3 endpoin
 | Setting | Example Value | Purpose |
 |---|---|---|
 | Partner API region | `us-east`, `us-west`, `ca-east`, `eu-central` | Used in `b2_create_group_member` |
-| S3 endpoint host | `s3.us-west-004.backblazeb2.com` | Stored on `storage_accounts.s3_endpoint`; used by S3-compatible clients |
+| S3 endpoint host | `s3.{region}.backblazeb2.com` (example — discovered at provisioning, not constructed) | Stored on `storage_accounts.s3_endpoint`; used by S3-compatible clients |
 | S3 endpoint label | `us-west-004`, `us-east-005`, `eu-central-003` | The middle component of the host; passed to S3 SDKs as the AWS region |
 
 Validate current region identifiers with Backblaze before production use (`docs/known-gaps.md` §3).

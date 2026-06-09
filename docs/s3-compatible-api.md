@@ -46,7 +46,34 @@ https://{bucket}.s3.{region}.backblazeb2.com/{key}          (virtual-hosted-styl
 - **Both URL styles are supported.** Most modern SDKs default to virtual-hosted-style.
 - `{region}` is the S3 endpoint label, e.g., `us-west-004`, `us-east-005`, `eu-central-003`. This is **different** from the Partner API region code — see "Region values" below.
 
-The endpoint per customer account is recorded in `storage_accounts.s3_endpoint` at provisioning time. Clients can also discover it from the `s3ApiUrl` returned by `b2_authorize_account`.
+The endpoint per customer account is recorded in `storage_accounts.s3_endpoint` at provisioning time.
+
+### Endpoint discovery
+
+Never hard-code or infer Backblaze service URLs (no `apiNNN.backblazeb2.com`, `fNNN.backblazeb2.com`, or hand-built `s3.<region>.backblazeb2.com` hosts), and never derive the region from a bucket name, account ID, or application key. Endpoints are discovered, not constructed:
+
+- **Platform / control plane (B2 Native API).** Authorize once at the fixed endpoint `https://api.backblazeb2.com/b2api/v3/b2_authorize_account`, then read the live endpoints from the response: `apiInfo.storageApi.apiUrl` (B2 Native base URL), `apiInfo.storageApi.downloadUrl` (downloads), and `apiInfo.storageApi.s3ApiUrl` (S3-compatible, when needed). Send the returned `authorizationToken` on subsequent calls and re-authorize when the token expires (≈24h) or a request reports the authorization is no longer valid.
+- **Tenant S3 tooling.** Tenants do not call `b2_authorize_account`; they configure their S3 client with the per-account `s3_endpoint` value the platform captured at provisioning (`storage_accounts.s3_endpoint`) — again, never a hand-built host.
+
+A single authorize call returns all three URLs in `apiInfo.storageApi` — the B2 Native and S3 endpoints are not discovered separately:
+
+```jsonc
+{
+  "authorizationToken": "...",            // send on subsequent authorized requests
+  "apiInfo": {
+    "storageApi": {
+      "apiUrl":      "https://apiNNN.backblazeb2.com",      // B2 Native API base URL
+      "downloadUrl": "https://fNNN.backblazeb2.com",        // file downloads
+      "s3ApiUrl":    "https://s3.<region>.backblazeb2.com", // S3-compatible endpoint
+      "recommendedPartSize":     100000000,
+      "absoluteMinimumPartSize": 5000000
+      // ...account capabilities and bucket restrictions
+    }
+  }
+}
+```
+
+Read these values verbatim — the `apiNNN`/`fNNN`/`s3.<region>` hosts above are whatever Backblaze returns, not patterns to reconstruct. The authorize response (or the stored `s3_endpoint`) is the source of truth for the correct API, download, and S3 endpoints. See `docs/common-pitfalls.md` §24.
 
 ---
 
@@ -76,11 +103,11 @@ The B2 application key works directly as an S3 credential:
 | AWS Region | Partner API region (e.g., `us-west`) or S3 endpoint label (e.g., `us-west-004`) — depends on the SDK; most accept the endpoint label | Used in the signing string |
 | AWS Service | `s3` | Standard for S3 calls |
 
-No separate "AWS-style" credential needs to be provisioned. Any B2 application key with the required capabilities works as an S3 credential.
+No separate "AWS-style" credential needs to be provisioned. Any **non-master** B2 application key with the required capabilities works as an S3 credential. (The master key does not — Backblaze's S3 API rejects it; see below.)
 
 ### Never Use the Operator Master Key as an S3 Credential
 
-Backblaze does not technically restrict which keys can use the S3 API — the master application key works as an S3 credential just like any other B2 key. **The platform must not allow this in practice.** The master key has full Partner API access and account-level scope across every customer account. Using it as an S3 credential — even for testing — creates a credential with the broadest possible blast radius on the easiest-to-leak surface (S3 client config files, environment variables, CI logs).
+Backblaze's S3-compatible API **rejects** the operator master key: S3 requests signed with it fail to authenticate, so it cannot be used as an S3 credential at all. Only non-master application keys work on the S3 API. Independently of that, the master key must never appear in any S3 client config because of its full Partner API access and account-level scope across every customer account — a leak on the easiest-to-leak surface (S3 client config files, environment variables, CI logs) would have the broadest possible blast radius.
 
 Rules:
 

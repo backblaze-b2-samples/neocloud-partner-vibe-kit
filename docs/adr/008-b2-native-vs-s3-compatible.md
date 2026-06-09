@@ -22,7 +22,7 @@ A separate question is: what should tenants use to read and write their own data
 
 ## Decision
 
-**Tenants may use either the B2 Native API or the S3-compatible API against their provisioned customer account. The platform documents both as supported, with the same B2 application key working as the credential for both.**
+**Tenants may use either the B2 Native API or the S3-compatible API against their provisioned customer account. The platform documents both as supported, with the same (non-master) B2 application key working as the credential for both.**
 
 Specifics:
 
@@ -36,7 +36,7 @@ Specifics:
 ## Rationale
 
 - **Tenant onboarding velocity.** S3 client libraries are ubiquitous. Forcing every tenant to use B2-specific SDKs would reject a large fraction of potential workloads with no architectural benefit.
-- **No additional credential complexity.** Backblaze's S3 implementation accepts B2 application keys directly as AWS access key/secret. No separate provisioning is required; we already create the right credential during tenant setup.
+- **No additional credential complexity.** Backblaze's S3 implementation accepts **non-master** B2 application keys directly as AWS access key/secret (the master key is rejected by the S3 API). No separate provisioning is required; we already create a scoped non-master key during tenant setup.
 - **Same isolation model.** S3 access against a tenant's customer account is constrained by the same key scope that constrains B2 Native access. The account-per-tenant isolation boundary applies to both APIs equally.
 - **Same metering substrate.** B2's daily usage CSV records account-level usage regardless of which API surfaced the operation. The platform's `usage_imports` / `billing_ledger` pipeline already attributes by account first, so S3 usage is billed correctly without changes.
 - **Operator preference.** Workloads that need Backblaze-specific features (Partner API, finer Large File control, B2 Reserve trial workflows) can still use the B2 Native API — both are supported simultaneously.
@@ -68,7 +68,7 @@ Specifics:
 | **S3-only, hide the B2 Native API from tenants** | Loses Backblaze-specific features (Partner API workflows for tenant-of-tenants patterns, Large File progress, fine-grained capabilities). Forces tenants who already use B2 Native to migrate. |
 | **B2 Native-only, no S3 access for tenants** | Rejects tenants with existing S3 tooling. High onboarding friction. Backblaze documents S3-compatible as a supported interface — refusing to expose it to tenants is leaving value on the table. |
 | **Platform-proxied S3 (the platform exposes its own S3-compatible endpoint, forwards to B2)** | High implementation cost. Adds a hop with no clear benefit since B2 already provides S3 directly. Tenants who want a single-tenant view can get it through scoped provider keys. |
-| **Issue separate "S3 access" credentials in addition to B2 keys** | Backblaze does not require this — B2 application keys work as S3 credentials directly. Adding a parallel credential type would duplicate lifecycle work for no functional gain. |
+| **Issue separate "S3 access" credentials in addition to B2 keys** | Backblaze does not require this — non-master B2 application keys work as S3 credentials directly. Adding a parallel credential type would duplicate lifecycle work for no functional gain. |
 
 ---
 

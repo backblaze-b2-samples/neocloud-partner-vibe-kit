@@ -74,7 +74,7 @@ This document materializes the review scope referenced in `docs/known-gaps.md` Â
 - [ ] No credentials in config files in the repo. Config files reference environment variables or secret store paths only.
 - [ ] `.env`, `.env.*`, and similar files are in `.gitignore`.
 - [ ] Operator master key value lives only in the secrets store (e.g., Vault, AWS Secrets Manager).
-- [ ] Operator master key is **never** used as an S3 credential by any tenant or tool. Backblaze does not restrict the master key from the S3 API at the protocol level â€” the restriction is policy you enforce. Verified by `grep` over CI configs, deployment manifests, and S3 client config files.
+- [ ] Operator master key is **never** used as an S3 credential by any tenant or tool. Backblaze rejects the master key at the S3 protocol level (S3 auth with the master key fails); regardless, it must never appear in any S3 client config or tenant-facing artifact given its Partner API/native scope. Verified by `grep` over CI configs, deployment manifests, and S3 client config files.
 - [ ] Tenant S3 client configurations reference a tenant-scoped provider key only. The master key never appears in tenant-facing artifacts.
 - [ ] Per-tenant provider key values live only in the secrets store, keyed by `provider_key_id`.
 - [ ] The platform database has no plaintext credential columns (only IDs and hashes).

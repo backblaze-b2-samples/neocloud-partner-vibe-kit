@@ -80,7 +80,7 @@ Create B2 application keys inside the tenant's provisioned B2 customer account/s
 The operator master key has full Partner API access and account-level capabilities across every provisioned customer account. It must be treated as the highest-privilege credential in the platform:
 
 - **Used by the platform's control plane only.** No tenant-facing code path may load or invoke the master key.
-- **Never used as an S3 credential for tenant workloads.** Backblaze does not restrict the master key from the S3 API — the restriction is a policy you enforce. The master key must not appear in any S3 client configuration.
+- **Never used as an S3 credential.** Backblaze's S3 API rejects the master key outright (enforced by B2, not just platform policy), so it cannot serve as an S3 credential. It must still never appear in any S3 client configuration given its full Partner API/account-level scope.
 - **Stored in the secrets store only.** Never in source, config files, environment files committed to the repo, or anywhere a tenant could reach it.
 - **Rotated on a defined schedule** (default: 90 days; see `docs/configuration-reference.md` §15).
 - **Used only over HTTPS** against B2 endpoints. No direct API access from tenant-network code paths.

@@ -24,7 +24,7 @@ A B2 customer account lives in a pre-defined Partner API region. If a customer n
 
 Partner API region inputs should use Partner API region codes such as `us-east`, `us-west`, `ca-east`, and `eu-central`. Do not pass S3 endpoint/cluster labels such as `us-west-004` as Partner API `region` values. Store S3 endpoint or cluster metadata separately when needed.
 
-The Partner API response for a successful customer account creation includes the S3 endpoint host for that account (e.g., `s3.us-west-004.backblazeb2.com`). Capture this in `storage_accounts.s3_endpoint` at provisioning time — it cannot be inferred reliably from the region code alone, and it is what tenants need to configure S3 clients. See `docs/s3-compatible-api.md` §Region Values.
+The Partner API response for a successful customer account creation includes the S3 endpoint host for that account (e.g., `s3.{region}.backblazeb2.com`). Capture this in `storage_accounts.s3_endpoint` at provisioning time — it cannot be inferred reliably from the region code alone, and it is what tenants need to configure S3 clients. See `docs/s3-compatible-api.md` §Region Values.
 
 ## Customer account alias and `memberEmail`
 

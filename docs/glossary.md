@@ -101,8 +101,8 @@ For canonical entity definitions (columns, relationships), see `docs/data-model.
 
 ## S
 
-- **S3-compatible API** — Backblaze's AWS S3-protocol-compatible endpoint, exposed at `https://s3.{region}.backblazeb2.com/`. Authenticated via AWS SigV4 using B2 application keys directly. See `docs/s3-compatible-api.md` for supported operations and limitations.
-- **S3 endpoint (label)** — B2 S3-compatible host such as `s3.us-west-004.backblazeb2.com`. The full URL including the host. Stored in `storage_accounts.s3_endpoint`. Do not confuse with the Partner API region code.
+- **S3-compatible API** — Backblaze's AWS S3-protocol-compatible endpoint, exposed at `https://s3.{region}.backblazeb2.com/`. Authenticated via AWS SigV4 using non-master B2 application keys directly (the master key is rejected by the S3 API). See `docs/s3-compatible-api.md` for supported operations and limitations.
+- **S3 endpoint (label)** — B2 S3-compatible host of the form `s3.{region}.backblazeb2.com`. The full URL including the host. Discovered at provisioning and stored in `storage_accounts.s3_endpoint` (never hand-built or inferred from the region code). Do not confuse with the Partner API region code.
 - **S3 endpoint label (region)** — The middle component of an S3 endpoint URL (e.g., `us-west-004`, `us-east-005`, `eu-central-003`). Distinct from the Partner API region code (e.g., `us-west`).
 - **Safe filename** — Sanitized version of the user-supplied filename, suitable for inclusion as the last component of a physical B2 file name. Stored in `objects.safe_filename`.
 - **Service account** — Programmatic identity inside a tenant. Holds platform API keys, not provider keys.

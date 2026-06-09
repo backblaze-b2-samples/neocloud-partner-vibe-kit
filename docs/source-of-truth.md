@@ -55,6 +55,7 @@ Customer overlays may not override these without explicit review:
 - Customers cannot self-enable Partner API.
 - A customer account lives in a pre-defined region.
 - Multi-region customers require multiple customer accounts/sub-accounts.
+- Backblaze endpoints (api / download / S3) are discovered from the `b2_authorize_account` response (or the stored per-account `s3_endpoint`), never hard-coded or inferred from region codes.
 - Metadata-based authorization.
 - B2 file-name distribution for high-scale generated names.
 - Durable usage events.
