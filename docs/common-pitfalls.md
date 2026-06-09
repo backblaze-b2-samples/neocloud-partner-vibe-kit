@@ -468,7 +468,7 @@ customer-acme/run-2026-05-21/file.bin
 - B2 authorization tokens expire (≈24h); a reused URL with a stale token starts failing mid-workload.
 
 **Right**
-- Platform/control-plane code authorizes once at the fixed endpoint `https://api.backblazeb2.com/b2api/v3/b2_authorize_account`, then reads `apiInfo.storageApi.{apiUrl, downloadUrl, s3ApiUrl}` and `authorizationToken` from the response. Re-authorize on token expiry or a `401`/authorization-invalid response.
+- Platform/control-plane code authorizes once at the fixed endpoint `https://api.backblazeb2.com/b2api/v4/b2_authorize_account`, then reads `apiInfo.storageApi.{apiUrl, downloadUrl, s3ApiUrl}` and `authorizationToken` from the response. Re-authorize on token expiry or a `401`/authorization-invalid response.
 - Tenant S3 tooling uses the provisioned `storage_accounts.s3_endpoint` value (captured at provisioning), never a hand-built host.
 - Never infer region from bucket names, account IDs, application keys, or previously seen URLs — the authorize response is the source of truth.
 

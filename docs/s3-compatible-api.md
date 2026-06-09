@@ -52,10 +52,10 @@ The endpoint per customer account is recorded in `storage_accounts.s3_endpoint` 
 
 Never hard-code or infer Backblaze service URLs (no `apiNNN.backblazeb2.com`, `fNNN.backblazeb2.com`, or hand-built `s3.<region>.backblazeb2.com` hosts), and never derive the region from a bucket name, account ID, or application key. Endpoints are discovered, not constructed:
 
-- **Platform / control plane (B2 Native API).** Authorize once at the fixed endpoint `https://api.backblazeb2.com/b2api/v3/b2_authorize_account`, then read the live endpoints from the response: `apiInfo.storageApi.apiUrl` (B2 Native base URL), `apiInfo.storageApi.downloadUrl` (downloads), and `apiInfo.storageApi.s3ApiUrl` (S3-compatible, when needed). Send the returned `authorizationToken` on subsequent calls and re-authorize when the token expires (≈24h) or a request reports the authorization is no longer valid.
+- **Platform / control plane (B2 Native API).** Authorize once at the fixed endpoint `https://api.backblazeb2.com/b2api/v4/b2_authorize_account`, then read the live endpoints from the response: `apiInfo.storageApi.apiUrl` (B2 Native base URL), `apiInfo.storageApi.downloadUrl` (downloads), and `apiInfo.storageApi.s3ApiUrl` (S3-compatible, when needed). Send the returned `authorizationToken` on subsequent calls and re-authorize when the token expires (≈24h) or a request reports the authorization is no longer valid.
 - **Tenant S3 tooling.** Tenants do not call `b2_authorize_account`; they configure their S3 client with the per-account `s3_endpoint` value the platform captured at provisioning (`storage_accounts.s3_endpoint`) — again, never a hand-built host.
 
-A single authorize call returns all three URLs in `apiInfo.storageApi` — the B2 Native and S3 endpoints are not discovered separately:
+A single authorize call (v4) returns all of these in `apiInfo` — the B2 Native, S3, and Partner API endpoints are not discovered separately:
 
 ```jsonc
 {
@@ -68,12 +68,19 @@ A single authorize call returns all three URLs in `apiInfo.storageApi` — the B
       "recommendedPartSize":     100000000,
       "absoluteMinimumPartSize": 5000000
       // ...account capabilities and bucket restrictions
+    },
+    "groupsApi": {                                          // present for Partner-enabled accounts
+      "groupsApiUrl": "https://apiNNN.backblazeb2.com",     // Partner API base URL
+      "capabilities": ["..."],
+      "infoType":     "groupsApi"
     }
   }
 }
 ```
 
 Read these values verbatim — the `apiNNN`/`fNNN`/`s3.<region>` hosts above are whatever Backblaze returns, not patterns to reconstruct. The authorize response (or the stored `s3_endpoint`) is the source of truth for the correct API, download, and S3 endpoints. See `docs/common-pitfalls.md` §24.
+
+> **API versions.** Storage / B2 Native operations (including `b2_authorize_account`) use the `/b2api/v4/` path; Partner API operations (`b2_create_group_member`, `b2_eject_group_member`, `b2_list_groups`, `b2_list_group_members`) use `/b2api/v3/`. Use the `apiUrl` / `groupsApiUrl` from the response as the base and append the documented version + operation path; do not "upgrade" Partner calls to v4.
 
 ---
 
@@ -131,6 +138,8 @@ The B2 capability model maps to S3 operations as follows. Provision tenant keys 
 | PutBucketLifecycleConfiguration, PutBucketEncryption | Master / control-plane capabilities only — do not grant to tenants |
 
 Default tenant capability set: `listFiles, readFiles, writeFiles, shareFiles` (and optionally `deleteFiles`). See `CLAUDE.md` §Key Capabilities Reference.
+
+> **Bucket-restricted keys need `listAllBucketNames`.** If a tenant key is restricted to a specific bucket, Backblaze requires the `listAllBucketNames` capability as well, for compatibility with S3 SDKs and integrations (many call `ListBuckets`/region-resolution on connect). Keys that are not bucket-restricted already carry it.
 
 ---
 

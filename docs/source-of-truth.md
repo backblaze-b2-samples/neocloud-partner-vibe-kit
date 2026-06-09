@@ -63,7 +63,7 @@ Customer overlays may not override these without explicit review:
 - No local/frontend counters for billing.
 - Direct B2 listing is not the primary tenant dashboard source.
 - Usage attribution starts with provider account/storage account.
-- Tenants may use the B2 Native API or the S3-compatible API; both are valid against the tenant's customer account. SigV4 only; SSE-KMS, object tagging, IAM roles, and object-level ACLs are not supported by Backblaze's S3 implementation.
+- Tenants may use the B2 Native API or the S3-compatible API; both are valid against the tenant's customer account. SigV4 only; SSE-KMS, object tagging, IAM roles, and object-level ACLs are not supported by Backblaze's S3 implementation (only the bucket-level canned `private`/`public-read` ACLs exist).
 
 ## Configurable defaults
 

@@ -82,6 +82,8 @@ Do not couple product logic directly to raw API calls. Keep a thin Backblaze Par
 
 Only expose operations that correspond to documented Backblaze API calls or returned API endpoints.
 
+> **API version.** Partner API operations use the `/b2api/v3/` path against the `groupsApiUrl` returned by `b2_authorize_account` (v4). Storage / B2 Native operations use `/b2api/v4/`. The two surfaces are versioned independently — do not "upgrade" Partner calls to v4. See `docs/s3-compatible-api.md` §Endpoint discovery.
+
 ```text
 BackblazePartnerApiClient
   authorizeAccount
