@@ -48,6 +48,29 @@ flowchart TB
     AUD -. cross-cutting .-> DP
 ```
 
+## Client access paths (Direct vs Intercept)
+
+A request reaches B2 by one of two paths — and a deployment may mix them per tenant or use case. The kit implements Intercept via its own API plus short-lived presigned URLs (the Hybrid below); it does not run a transparent S3 byte-proxy. See `docs/neocloud-architecture.md` §Client access paths.
+
+```mermaid
+flowchart LR
+    subgraph D["Direct access"]
+        direction TB
+        DC["Client<br/>(tenant's own B2 key)"] -->|"S3 SigV4"| DB["Backblaze B2"]
+    end
+    subgraph I["Intercept (platform-mediated)"]
+        direction TB
+        IC["Client<br/>(platform token)"] --> IA["Neocloud API<br/>auth · policy · quota · usage/audit"]
+        IA -->|"B2 Native, injected creds"| IB["Backblaze B2"]
+    end
+    subgraph H["Hybrid (how the kit intercepts)"]
+        direction TB
+        HC["Client"] --> HA["Neocloud API authorizes<br/>then mints presigned URL"]
+        HA -->|"presigned URL"| HC
+        HC -->|"direct byte transfer"| HB["Backblaze B2"]
+    end
+```
+
 ## Tenant isolation (account/sub-account, not bucket)
 
 Isolation is driven by provisioned B2 customer accounts, organized by Backblaze

@@ -126,6 +126,18 @@ The platform never proxies S3 — tenants who want S3 connect directly to Backbl
 
 See `docs/s3-compatible-api.md` for the full S3 surface, and `docs/adr/008-b2-native-vs-s3-compatible.md` for the decision rationale.
 
+## Client access paths (Direct vs Intercept)
+
+Mapping to Backblaze's *Neocloud API Reference Architecture for B2*, a request can reach B2 by one of two paths, and a deployment may use **any combination** of them — intercepting some operations while letting others go direct, per tenant or per use case. See the rendered diagram in `docs/architecture-diagrams.md` §Client access paths.
+
+**Direct access — client → B2.** The client talks straight to B2 using the tenant's own B2 application key (S3-compatible, SigV4). The platform is not in the request path: no per-request policy or quota enforcement, and the platform does not see the bytes or the individual operations. Authorization is exactly the capability/prefix scope of the tenant's key. Usage is attributed after the fact from the daily B2 usage CSV (`usage_import_rows`), not from `usage_events`. Best when the tenant is comfortable holding keys and wants maximum throughput and the lowest platform cost.
+
+**Intercept — client → Neocloud API → B2.** The client calls the platform's API with a platform token; the platform authorizes from trusted metadata, enforces policy and quotas, writes `usage_events` and `audit_events`, and reaches B2 with provider keys the client never sees. Best for centralized policy, per-request control, key concealment, and unified IAM across backends.
+
+**How the kit implements Intercept (important).** The kit mediates through its **own API plus short-lived presigned URLs** — it deliberately does **not** run a transparent S3 proxy that streams tenant bytes through the platform. This avoids paying egress for bytes that pass through a proxy and avoids the kit holding tenant payloads. Presigned URLs are the hybrid that gets both properties: the platform performs the metadata authorization check (intercept-style control, an `audit_events`/`usage_events` row) and then hands back a time-limited URL so the bytes move **directly** between client and B2 (direct-style efficiency). A partner who specifically wants a transparent S3 proxy (e.g., an Nginx/Lambda layer that injects B2 credentials) can build one in front of B2, but that is outside the kit's reference flows and carries the egress and key-handling costs noted above.
+
+**Enablement.** The provisioning side of the intercept path (Partner API, Groups) must be enabled by Backblaze before use — see `docs/provisioning-and-partner-api.md`.
+
 ## Control plane vs data plane
 
 ```text
