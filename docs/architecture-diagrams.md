@@ -91,7 +91,7 @@ sequenceDiagram
     participant PA as Partner API (BackblazePartnerApiClient)
     participant B2 as Backblaze B2
 
-    Note over Op,B2: Prereq: Partner API + Groups enabled by Backblaze;<br/>Group created in the Backblaze website (not via API)
+    Note over Op,B2: Prereq — Partner API + Groups enabled by Backblaze.<br/>Group created in the Backblaze website (not via API)
     Op->>NC: Provision tenant (region)
     NC->>NC: Generate alias<br/>customerId-region@storageDomain
     NC->>PA: createGroupMember({ adminAccountId, groupId, memberEmail, region })
