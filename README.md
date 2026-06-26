@@ -6,7 +6,7 @@
 > usage/reporting layer, provisioning workflows, and operational foundation.
 
 <p align="center">
-  <a href="https://github.com/backblaze-b2-samples/Neocloud-Powered-By-Vibe-Starter-Kit/actions/workflows/kit-qa.yml"><img alt="Kit QA" src="https://github.com/backblaze-b2-samples/Neocloud-Powered-By-Vibe-Starter-Kit/actions/workflows/kit-qa.yml/badge.svg"></a>
+  <a href="https://github.com/backblaze-b2-samples/neocloud-partner-vibe-kit/actions/workflows/kit-qa.yml"><img alt="Kit QA" src="https://github.com/backblaze-b2-samples/neocloud-partner-vibe-kit/actions/workflows/kit-qa.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
   <img alt="Claude-ready" src="https://img.shields.io/badge/Claude-ready-8A2BE2">
   <a href="CONTRIBUTING.md"><img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg"></a>
