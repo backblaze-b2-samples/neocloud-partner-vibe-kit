@@ -12,6 +12,8 @@
   <a href="CONTRIBUTING.md"><img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg"></a>
 </p>
 
+> **A reference implementation guide, not an officially supported Backblaze product.** Provided as-is under the MIT license. See [Disclaimers](#disclaimers).
+
 **Who it's for.** Any partner offering storage to their own customers on top of Backblaze B2: neoclouds (AI/GPU clouds), MSPs and managed-service providers, SaaS platforms embedding storage, backup/archive vendors, and resellers. A "neocloud" is the headline example, but the same foundation — Partner API provisioning, account/sub-account tenant isolation, usage attribution, and billing/chargeback — applies across all of these.
 
 This is **not** a simple upload/list/download app and it is **not** a finished production platform. It is a reference package that helps Claude and engineers build the platform correctly, incrementally, and with tests.
@@ -229,3 +231,12 @@ Backblaze exposes three distinct API surfaces relevant to neocloud:
 - **S3-compatible API** — Backblaze's S3 protocol endpoints (e.g., `s3.us-west-004.backblazeb2.com`), AWS SigV4 auth. The `storage_accounts.s3_endpoint` column records the S3 endpoint for each customer account.
 
 For ready-to-run Postman collections covering these surfaces, use Backblaze's public Postman workspace: <https://www.postman.com/backblaze/backblaze/overview>. Treat it as **reference material**, not the target neocloud application API contract — for that, use `docs/api-contracts.md`.
+
+## Disclaimers
+
+- **Not an officially supported product.** This kit is a reference/implementation guide published as a sample. It is not a finished product and is not officially developed, maintained, or supported by Backblaze. Use it at your own risk.
+- **Not production-ready as-is.** The kit helps you *build* a platform; it is not itself a production system. Complete `docs/security-review-checklist.md` and your own review before any production deployment.
+- **Cost and TCO figures are estimates.** Pricing, cost, and TCO numbers (e.g., in `docs/cost-and-tco.md`) are best-effort illustrations, not quotes or invoices. Verify current pricing at [backblaze.com](https://www.backblaze.com/cloud-storage/pricing) and against your own Backblaze billing.
+- **Partner API requires enablement and has rate limits.** Partner API and Group features must be enabled by Backblaze, and every call counts against Partner API rate limits.
+- **You are responsible for your deployment.** A platform built from this kit handles credentials and customer data. Securing keys, enforcing tenant isolation, and meeting compliance requirements are your responsibility.
+- **No warranty.** This material is provided "as is", without warranty of any kind. See [LICENSE](LICENSE) for the full terms.
