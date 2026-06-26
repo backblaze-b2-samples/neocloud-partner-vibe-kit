@@ -1,11 +1,53 @@
-<!-- last_verified: 2026-06-06 -->
+<!-- last_verified: 2026-06-26 -->
 # Neocloud/Partner Vibe Kit
 
-A Claude-ready implementation guide for Backblaze partners building a B2-backed multi-tenant storage platform — control plane, high-throughput data plane, usage/reporting layer, provisioning workflows, and operational foundation.
+> A Claude-ready implementation guide for Backblaze partners building a B2-backed
+> multi-tenant storage platform — control plane, high-throughput data plane,
+> usage/reporting layer, provisioning workflows, and operational foundation.
+
+<p align="center">
+  <a href="https://github.com/backblaze-b2-samples/Neocloud-Powered-By-Vibe-Starter-Kit/actions/workflows/kit-qa.yml"><img alt="Kit QA" src="https://github.com/backblaze-b2-samples/Neocloud-Powered-By-Vibe-Starter-Kit/actions/workflows/kit-qa.yml/badge.svg"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+  <img alt="Claude-ready" src="https://img.shields.io/badge/Claude-ready-8A2BE2">
+  <a href="CONTRIBUTING.md"><img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg"></a>
+</p>
 
 **Who it's for.** Any partner offering storage to their own customers on top of Backblaze B2: neoclouds (AI/GPU clouds), MSPs and managed-service providers, SaaS platforms embedding storage, backup/archive vendors, and resellers. A "neocloud" is the headline example, but the same foundation — Partner API provisioning, account/sub-account tenant isolation, usage attribution, and billing/chargeback — applies across all of these.
 
 This is **not** a simple upload/list/download app and it is **not** a finished production platform. It is a reference package that helps Claude and engineers build the platform correctly, incrementally, and with tests.
+
+## Architecture at a glance
+
+```mermaid
+flowchart TB
+    subgraph Clients
+        Admin["Operator admin portal"]
+        Tenant["Tenant portal / API clients"]
+    end
+    subgraph Platform["Neocloud platform"]
+        CP["Control-plane API"]
+        DP["Data-plane API<br/>(upload, download, presign)"]
+        DB[("Metadata DB")]
+        UE[("Usage ledger<br/>append-only")]
+        REP["Reporting & billing<br/>reconciliation"]
+        SP["Storage provider abstraction<br/>+ Partner API client"]
+    end
+    B2["Backblaze B2<br/>accounts · buckets · keys · objects"]
+    Admin --> CP
+    Tenant --> CP
+    Tenant --> DP
+    CP --> DB
+    DP --> DB
+    DP --> UE
+    DP --> SP
+    CP --> SP
+    REP --> UE
+    REP --> DB
+    SP --> B2
+```
+
+> Full diagrams — tenant isolation, provisioning, upload, billing, data model — are in
+> [`docs/architecture-diagrams.md`](docs/architecture-diagrams.md).
 
 ## Getting started
 

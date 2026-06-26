@@ -1,5 +1,8 @@
-<!-- last_verified: 2026-06-06 -->
+<!-- last_verified: 2026-06-26 -->
 # Neocloud Architecture
+
+> For the full set of rendered diagrams (isolation, provisioning, upload, billing,
+> data model), see [`docs/architecture-diagrams.md`](architecture-diagrams.md).
 
 ## Current starter-kit architecture
 
@@ -17,48 +20,38 @@ The original starter kit is a simple B2-backed file app. It is useful for basic 
 8. B2 object storage
 9. Audit and observability layer
 
-```text
-   ┌────────────────────────────────────────────┐
-   │       1. Portal / UI (admin + tenant)      │
-   └────────────────────────────────────────────┘
-                       │
-   ┌───────────────────┴────────────────────────┐
-   │  2. Control-plane API   3. Data-plane API  │
-   │  (tenants, projects,    (upload, download, │
-   │   keys, quotas, etc.)    presign, delete)  │
-   └───────────────────┬────────────────────────┘
-                       │
-   ┌───────────────────┴────────────────────────┐
-   │   4. Metadata DB    5. Usage event ledger  │
-   │      (tenants,         (usage_events,      │
-   │       projects,         append-only)       │
-   │       objects, …)                          │
-   └───────────────────┬────────────────────────┘
-                       │
-   ┌───────────────────┴────────────────────────┐
-   │   6. Reporting / reconciliation jobs       │
-   │      (usage_imports → usage_import_rows    │
-   │       → billing_ledger)                    │
-   └───────────────────┬────────────────────────┘
-                       │
-   ┌───────────────────┴────────────────────────┐
-   │   7. Storage provider abstraction          │
-   │      (NeocloudStorageProvider composite +  │
-   │       BackblazePartnerApiClient adapter)   │
-   └───────────────────┬────────────────────────┘
-                       │
-   ┌───────────────────┴────────────────────────┐
-   │   8. B2 object storage                     │
-   │      (Backblaze customer accounts,         │
-   │       buckets, application keys, objects)  │
-   └────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph Clients
+        Admin["1. Operator admin portal"]
+        Tenant["1. Tenant portal / API clients"]
+    end
 
-   ┌────────────────────────────────────────────┐
-   │   9. Audit + observability                 │
-   │      (audit_events, structured logs,       │
-   │       /admin/metrics, health endpoints)    │
-   └────────────────────────────────────────────┘
-   ↑   cross-cutting — every layer emits to 9
+    subgraph Platform["Neocloud platform"]
+        CP["2. Control-plane API<br/>(tenants, accounts, keys, config)"]
+        DP["3. Data-plane API<br/>(upload, download, presign, delete)"]
+        DB[("4. Metadata DB<br/>tenants · projects · objects")]
+        UE[("5. Usage event ledger<br/>usage_events · append-only")]
+        REP["6. Reporting & reconciliation<br/>usage_imports → usage_import_rows → billing_ledger"]
+        SP["7. Storage provider abstraction<br/>NeocloudStorageProvider + BackblazePartnerApiClient"]
+        AUD["9. Audit & observability<br/>audit_events · logs · /admin/metrics · health"]
+    end
+
+    B2["8. Backblaze B2<br/>customer accounts · buckets · keys · objects"]
+
+    Admin --> CP
+    Tenant --> CP
+    Tenant --> DP
+    CP --> DB
+    DP --> DB
+    DP --> UE
+    DP --> SP
+    CP --> SP
+    REP --> UE
+    REP --> DB
+    SP --> B2
+    AUD -. cross-cutting .-> CP
+    AUD -. cross-cutting .-> DP
 ```
 
 ## Tenant isolation model

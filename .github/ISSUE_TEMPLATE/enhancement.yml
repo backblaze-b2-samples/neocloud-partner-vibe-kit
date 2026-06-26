@@ -1,0 +1,26 @@
+name: Enhancement or new guidance
+description: Suggest new guidance, an additional doc/prompt/overlay, or an improvement to the kit.
+title: "[enhancement] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to see?
+      description: Describe the new guidance, doc, prompt, overlay, or improvement.
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Why
+      description: What problem does it solve? Which partner/workload does it help (neocloud, MSP, SaaS, backup/archive)?
+    validations:
+      required: true
+  - type: textarea
+    id: invariants
+    attributes:
+      label: Relationship to the golden rules
+      description: Does this fit the existing golden rules (`CLAUDE.md`) and hard invariants (`docs/source-of-truth.md`), or would it change one? If it changes one, note which and why.
+    validations:
+      required: false
