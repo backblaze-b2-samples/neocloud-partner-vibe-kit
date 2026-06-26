@@ -1,0 +1,40 @@
+name: Inaccurate or unsafe guidance
+description: Report guidance in the kit that is wrong, outdated, or would lead to an unsafe design.
+title: "[guidance] "
+labels: ["guidance"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for **non-security** accuracy problems. For a security flaw in a
+        recommended pattern, or a committed secret, **do not open a public issue** —
+        follow [SECURITY.md](../blob/main/SECURITY.md) instead.
+  - type: input
+    id: location
+    attributes:
+      label: Where
+      description: File and section (e.g. `docs/provisioning-and-partner-api.md` §Eject).
+      placeholder: docs/...
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's wrong
+      description: What does the kit currently say, and why is it inaccurate or unsafe?
+    validations:
+      required: true
+  - type: textarea
+    id: correction
+    attributes:
+      label: Suggested correction
+      description: What should it say instead? Cite a source (e.g. backblaze.com docs) if you have one.
+    validations:
+      required: false
+  - type: checkboxes
+    id: invariants
+    attributes:
+      label: Confirmations
+      options:
+        - label: This is not a security vulnerability or a committed secret (those go through SECURITY.md).
+          required: true

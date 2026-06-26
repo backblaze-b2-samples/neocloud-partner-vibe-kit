@@ -1,0 +1,7 @@
+# Default owners for everything in this repo.
+# Owners are requested for review automatically on every PR.
+* @kevin-backblaze
+
+# The quality gate and CI — changes here affect every contribution.
+/scripts/ @kevin-backblaze
+/.github/ @kevin-backblaze
