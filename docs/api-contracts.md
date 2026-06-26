@@ -7,7 +7,7 @@ source_of_truth_for:
 
 # Neocloud API Contracts
 
-This document describes target neocloud application APIs. It is separate from the B2 Native API Postman collection.
+This document describes target neocloud application APIs. It is separate from the B2 Native API, which Backblaze documents in its public Postman workspace.
 
 > Entity references (`tenants`, `projects`, `storage_accounts`, `usage_events`, etc.) are defined in `docs/data-model.md`. Term definitions are in `docs/glossary.md`. For the precedence order when this doc conflicts with another, see `docs/source-of-truth.md`.
 
@@ -131,4 +131,4 @@ These are optional workflow APIs for small-file-heavy customers:
 
 ## Relationship to Postman
 
-The corrected v2 Postman collection is a B2 Native API reference/candidate workflow artifact. This API contract doc is the source for target neocloud application APIs.
+Backblaze's public Postman workspace (<https://www.postman.com/backblaze/backblaze/overview>) is a B2 Native API reference artifact. This API contract doc is the source for target neocloud application APIs.

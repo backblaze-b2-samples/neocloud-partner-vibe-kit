@@ -49,7 +49,6 @@ source_of_truth_for:
 - Partner API eject is not used for normal suspend/reactivate and requires explicit confirmation when exposed.
 - Small-file policy is documented when workloads are small-object-heavy.
 - Customer overlay does not override hard invariants.
-- B2-native Postman environments match collection variables.
 - No deprecated prompt files are used.
 - Direct B2 listing is not primary tenant dashboard source.
 - Billing/reporting does not use local/frontend counters.

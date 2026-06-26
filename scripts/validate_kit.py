@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Kit-QA validator for the Neocloud/Partner Vibe Kit.
 
-This kit is a content product (docs, prompts, context-packs, overlays, Postman
-collections), so "tests" are static/doc consistency checks. This script
+This kit is a content product (docs, prompts, context-packs, overlays), so
+"tests" are static/doc consistency checks. This script
 mechanically enforces the P0/P1 static + doc gates that `docs/testing-matrix.md`
 already declares, so the quality bar can't silently drift between handoffs.
 
@@ -13,7 +13,6 @@ Exit:  0 if every check passes, 1 otherwise.
 
 from __future__ import annotations
 
-import json
 import re
 import sys
 from pathlib import Path
@@ -25,25 +24,6 @@ except ImportError:
     sys.exit(2)
 
 ROOT = Path(__file__).resolve().parent.parent
-
-# Postman collection -> environment files expected to cover its variables.
-POSTMAN_PAIRS = [
-    (
-        "Backblaze_B2_Postman_Collection_CORRECTED_v3.json",
-        ["b2-native-example.postman_environment.json", "b2-native-local.postman_environment.json"],
-    ),
-    (
-        "Backblaze B2 Cloud Storage S3 Compatible API.postman_collection.json",
-        ["s3-example.postman_environment.json", "s3-local.postman_environment.json"],
-    ),
-]
-POSTMAN_BUILTINS = {"$randomUUID", "$timestamp", "$guid", "$isoTimestamp", "$randomInt"}
-# Tokens that look like a credential key but are obvious placeholders/mocks.
-PLACEHOLDER_RE = re.compile(
-    r"(your|example|placeholder|xxx|<|changeme|replace|mock|sample|local|do[-_ ]?not[-_ ]?use|\.\.\.)",
-    re.I,
-)
-SECRET_KEY_TERMS = ("applicationkey", "authorizationtoken", "password", "secret", "token", "keymd5")
 
 
 class Results:
@@ -66,7 +46,7 @@ def read(path: Path) -> str:
 
 def check_reference_integrity(r: Results):
     pat = re.compile(
-        r"(?<![\w/])((?:docs|prompts|context-packs|customer-overlays|examples|postman)"
+        r"(?<![\w/])((?:docs|prompts|context-packs|customer-overlays|examples)"
         r"/[A-Za-z0-9._/-]+\.(?:md|ya?ml|json|csv))"
     )
     missing = {}
@@ -114,64 +94,6 @@ def check_routing(r: Results):
                         and not (ROOT / tok).exists():
                     missing.append(tok)
     r.add("START_HERE routing refs resolve", not missing, f"missing: {missing}" if missing else "")
-
-
-def _collect_vars(obj, acc: set):
-    if isinstance(obj, dict):
-        for v in obj.values():
-            _collect_vars(v, acc)
-    elif isinstance(obj, list):
-        for v in obj:
-            _collect_vars(v, acc)
-    elif isinstance(obj, str):
-        acc.update(re.findall(r"\{\{([^}]+)\}\}", obj))
-
-
-def check_postman(r: Results):
-    pdir = ROOT / "postman"
-    # JSON validity for every postman/*.json
-    bad = []
-    for f in sorted(pdir.glob("*.json")):
-        try:
-            json.loads(read(f))
-        except Exception as e:
-            bad.append(f"{f.name}: {e}")
-    r.add("Postman JSON validity", not bad, "; ".join(bad))
-
-    # Variable coverage: collection-used vars ⊆ env vars ∪ collection-defined vars.
-    for coll_name, envs in POSTMAN_PAIRS:
-        coll_path = pdir / coll_name
-        if not coll_path.exists():
-            r.add(f"Postman coverage: {coll_name}", False, "collection file missing")
-            continue
-        cobj = json.loads(read(coll_path))
-        # Exclude the human-readable changelog so prose like "{{variables}}"
-        # in info.description isn't mistaken for a real reference.
-        cobj.get("info", {}).pop("description", None)
-        used = set()
-        _collect_vars(cobj, used)
-        used -= POSTMAN_BUILTINS
-        coll_defined = {v.get("key") for v in cobj.get("variable", [])}
-        for env in envs:
-            ep = pdir / env
-            if not ep.exists():
-                r.add(f"Postman coverage: {env}", False, "env file missing")
-                continue
-            defined = {v.get("key") for v in json.loads(read(ep)).get("values", [])} | coll_defined
-            gap = sorted(used - defined)
-            r.add(f"Postman env covers collection vars: {env}", not gap,
-                  f"missing: {gap}" if gap else "")
-
-
-def check_no_secrets(r: Results):
-    leaks = []
-    for env in (ROOT / "postman").glob("*postman_environment.json"):
-        for v in json.loads(read(env)).get("values", []):
-            key, val = v.get("key", ""), (v.get("value") or "").strip()
-            if val and any(t in key.lower() for t in SECRET_KEY_TERMS):
-                if not PLACEHOLDER_RE.search(val) and len(val) >= 8:
-                    leaks.append(f"{env.name}:{key}={val[:24]!r}")
-    r.add("No real-looking secrets in Postman envs", not leaks, "; ".join(leaks))
 
 
 def check_master_key_guidance(r: Results):
@@ -314,8 +236,6 @@ def main() -> int:
         check_reference_integrity,
         check_pr_sequence,
         check_routing,
-        check_postman,
-        check_no_secrets,
         check_master_key_guidance,
         check_overlays,
         check_invariant_presence,

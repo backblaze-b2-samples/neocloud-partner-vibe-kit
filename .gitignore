@@ -8,3 +8,7 @@ node_modules/
 
 # Personal / internal-only working files — never push
 internal/
+
+# Python
+__pycache__/
+*.pyc

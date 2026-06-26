@@ -1,6 +1,6 @@
 # Kit QA — enforces the static/doc consistency gates from docs/testing-matrix.md
 # so the kit can't silently drift between handoffs. This kit is a content
-# product (docs, prompts, context-packs, overlays, Postman), so there is no app
+# product (docs, prompts, context-packs, overlays), so there is no app
 # to build or test — `scripts/validate_kit.py` is the test suite.
 name: Kit QA
 

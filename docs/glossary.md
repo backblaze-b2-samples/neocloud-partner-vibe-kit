@@ -109,7 +109,7 @@ For canonical entity definitions (columns, relationships), see `docs/data-model.
 - **SigV2** — Older AWS Signature Version 2. **Not supported** by Backblaze's S3-compatible API. Use SigV4 only.
 - **Source of truth** — The canonical authority for a given topic. Defined in `docs/source-of-truth.md`. Postman and the original starter kit are not sources of truth.
 - **SSE-B2** — Server-side encryption with Backblaze-managed keys. Set per-bucket or per-request. The default recommendation when encryption at rest is required without customer key management.
-- **SSE-C** — Server-side encryption with customer-managed keys. The customer supplies the key per request via `x-amz-server-side-encryption-customer-*` headers. The `keyMd5` variable in the S3 Postman environment maps to the MD5 header.
+- **SSE-C** — Server-side encryption with customer-managed keys. The customer supplies the key per request via `x-amz-server-side-encryption-customer-*` headers, including a `keyMd5` (base64-encoded MD5 of the customer key) header.
 - **SSE-KMS** — AWS KMS-managed server-side encryption. **Not supported** by Backblaze. Workloads requiring SSE-KMS must use SSE-B2 or SSE-C instead.
 - **Storage account** — `storage_accounts` row. Represents one Backblaze customer account/sub-account in one region for one tenant. A tenant may have multiple storage accounts for multi-region needs.
 - **Suspend (tenant suspension)** — Local/composite operation that disables tenant access and revokes tenant provider keys. Reversible via reactivate. Does not call Partner API eject.

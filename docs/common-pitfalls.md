@@ -304,15 +304,13 @@ customer-acme/run-2026-05-21/file.bin
 - Updating Postman to "match" the implementation, drifting it from the architecture.
 
 **Why wrong**
-- The Postman collection is candidate reference material. It may be stale.
+- Backblaze's public Postman workspace is reference material. It may be stale relative to the live API.
 - Implementation should follow `docs/api-contracts.md`, not Postman.
 
 **Right**
-- Use Postman for B2 API familiarization and manual testing.
+- Use Backblaze's public Postman workspace (<https://www.postman.com/backblaze/backblaze/overview>) for B2 API familiarization and manual testing.
 - Verify any Postman request against `docs/api-contracts.md` (for neocloud API) or the Backblaze docs (for B2 API) before implementing from it.
 - If Postman and docs disagree, the docs win.
-
-**References:** `docs/adr/005-postman-is-reference-not-source-of-truth.md`.
 
 ---
 

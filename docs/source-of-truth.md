@@ -38,7 +38,7 @@ When docs conflict, use this order:
 19. `docs/testing-matrix.md`
 20. prompt files for execution
 21. `docs/demo-script.md` for narrative/walkthrough only
-22. Postman collection as candidate/reference only
+22. Backblaze's public Postman workspace as reference only
 23. original Vibe Coding Starter Kit as developer-experience reference only
 
 Postman does not override the target architecture. The original starter kit does not override neocloud requirements.

@@ -12,13 +12,12 @@ When the user asks to save tokens:
 1. Read `START_HERE.md` first.
 2. Read only the relevant prompt and context pack.
 3. Prefer context packs over full docs.
-4. Do not load Postman unless the task is API/Postman-specific.
-5. Do not load the original Vibe Coding Starter Kit unless the task is reuse/dev-experience-specific.
-6. Ask before loading additional large files.
+4. Do not load the original Vibe Coding Starter Kit unless the task is reuse/dev-experience-specific.
+5. Ask before loading additional large files.
 
 ## Source-of-truth order
 
-Use `docs/source-of-truth.md` to resolve conflicts. In short: golden rules here, then source-of-truth, API contracts, data model, task-specific docs, roadmap, prompts, Postman, then original starter kit.
+Use `docs/source-of-truth.md` to resolve conflicts. In short: golden rules here, then source-of-truth, API contracts, data model, task-specific docs, roadmap, prompts, then original starter kit.
 
 ## Golden rules
 
@@ -140,7 +139,7 @@ Default physical B2 file-name layout:
 
 ## Postman guidance
 
-The corrected B2 Native API Postman collection lives at `postman/Backblaze_B2_Postman_Collection_CORRECTED_v3.json`. It is a candidate reference, not the target neocloud application API contract. Use `docs/api-contracts.md` for target platform APIs. Do not implement from Postman blindly.
+Ready-to-run Postman collections for the B2 Native, Partner, and S3-compatible APIs live in Backblaze's public Postman workspace: <https://www.postman.com/backblaze/backblaze/overview>. They are reference material, not the target neocloud application API contract. Use `docs/api-contracts.md` for target platform APIs. Do not implement from Postman blindly.
 
 ## Reusing the original Vibe Coding Starter Kit
 

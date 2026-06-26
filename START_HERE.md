@@ -15,7 +15,7 @@ Start with:
 3. The matching context pack
 4. One or two source-of-truth docs only when the task needs them
 
-Only open Postman when the task is specifically about B2 API requests, Postman, or API validation. Only open the original Vibe Coding Starter Kit when the task is specifically about developer experience or reuse guidance.
+Only open the original Vibe Coding Starter Kit when the task is specifically about developer experience or reuse guidance.
 
 ## Minimal Context Mode
 
@@ -26,9 +26,8 @@ When the user asks to save tokens:
 3. Do not open full reference docs unless needed.
 4. Summarize assumptions before editing.
 5. Ask before loading additional large files.
-6. Do not load Postman unless the task is API/Postman-specific.
-7. Do not load the original Vibe Coding Starter Kit unless the task is reuse/dev-experience-specific.
-8. Do not load more than one task-specific doc unless required.
+6. Do not load the original Vibe Coding Starter Kit unless the task is reuse/dev-experience-specific.
+7. Do not load more than one task-specific doc unless required.
 
 ## What to read for each task
 
@@ -83,4 +82,4 @@ Customer overlays and workflow recipes can change configurable choices, but they
 - Authorization uses trusted metadata and auth context.
 - B2 file names for high-scale generated object workloads are distributed across the lexicographical keyspace.
 - Usage and billing are based on durable records, not local/frontend counters.
-- Postman is reference material, not the source of truth for the target neocloud application API.
+- Backblaze's public Postman workspace is reference material, not the source of truth for the target neocloud application API.
