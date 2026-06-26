@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-06-06 -->
+<!-- last_verified: 2026-06-09 -->
 # Common Pitfalls
 
 Recurring mistakes when implementing or reviewing the neocloud platform. Each pitfall lists the wrong pattern, why it's wrong, and the right pattern. Use this doc as a PR review aid alongside `docs/quality-gates.md`.
@@ -437,12 +437,12 @@ customer-acme/run-2026-05-21/file.bin
 ## 23. Using the Operator Master Key as an S3 Credential
 
 **Wrong**
-- Pasting the operator's master `applicationKeyId` / `applicationKey` into a boto3 config or `.aws/credentials` to "quickly test" an S3 workflow.
+- Pasting the operator's master `applicationKeyId` / `applicationKey` into a boto3 config or `.aws/credentials` to "quickly test" an S3 workflow — which fails to authenticate anyway, but not before the key lands in shell history and local config.
 - Letting an internal tool use the master key for S3 access because it's already loaded in the environment.
 - Handing the master key to a tenant for "convenience" instead of provisioning a scoped tenant key.
 
 **Why wrong**
-- Backblaze does not restrict the master key from the S3 API — it has full account-level capabilities across every provisioned customer account. A leak on S3 (config files, environment, CI logs) exposes the entire platform.
+- Backblaze's S3 API rejects the master key — it won't authenticate, so the "quick test" above fails outright (S3 requires a non-master application key). The deeper problem is scope: the master key has full account-level capabilities across every provisioned customer account, so a leak on S3 (config files, environment, CI logs) — even from a failed test that left the key on disk — exposes the entire platform.
 - The master key is the only credential with Partner API access. Compromise of the master key means a third party can provision, eject, or modify any customer account.
 - Even one-off testing leaves the key in shell history, system clipboards, or local config files.
 
@@ -452,6 +452,27 @@ customer-acme/run-2026-05-21/file.bin
 - For tenant workloads, provision a tenant-scoped provider key with the minimum capability set (`listFiles, readFiles, writeFiles, shareFiles`, plus `deleteFiles` only if needed).
 
 **References:** `docs/security-and-tenant-isolation.md` §Operator master key, `docs/s3-compatible-api.md` §Never Use the Operator Master Key as an S3 Credential, `CLAUDE.md` §Golden rules.
+
+---
+
+## 24. Hard-Coding or Inferring Backblaze Endpoints
+
+**Wrong**
+- Putting a literal `apiNNN.backblazeb2.com`, `fNNN.backblazeb2.com`, or hand-built `s3.<region>.backblazeb2.com` host into client config or code.
+- Deriving the region (and a URL from it) by parsing a bucket name, account ID, or application key.
+- Caching a discovered URL once and reusing it forever, ignoring token expiry.
+
+**Why wrong**
+- Pod/region assignment is opaque and can change; a hand-built host can point at the wrong cluster.
+- A region inferred from a name or key may not match the account's actual endpoints, so requests silently go to the wrong host.
+- B2 authorization tokens expire (≈24h); a reused URL with a stale token starts failing mid-workload.
+
+**Right**
+- Platform/control-plane code authorizes once at the fixed endpoint `https://api.backblazeb2.com/b2api/v4/b2_authorize_account`, then reads `apiInfo.storageApi.{apiUrl, downloadUrl, s3ApiUrl}` and `authorizationToken` from the response. Re-authorize on token expiry or a `401`/authorization-invalid response.
+- Tenant S3 tooling uses the provisioned `storage_accounts.s3_endpoint` value (captured at provisioning), never a hand-built host.
+- Never infer region from bucket names, account IDs, application keys, or previously seen URLs — the authorize response is the source of truth.
+
+**References:** `CLAUDE.md` §Golden rules, `docs/s3-compatible-api.md` §Endpoint discovery, `docs/provisioning-and-partner-api.md` §Regional customer accounts.
 
 ---
 

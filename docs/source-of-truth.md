@@ -1,5 +1,5 @@
 ---
-last_verified: 2026-06-06
+last_verified: 2026-06-09
 status: reference
 source_of_truth_for:
   - conflict resolution
@@ -55,6 +55,7 @@ Customer overlays may not override these without explicit review:
 - Customers cannot self-enable Partner API.
 - A customer account lives in a pre-defined region.
 - Multi-region customers require multiple customer accounts/sub-accounts.
+- Backblaze endpoints (api / download / S3) are discovered from the `b2_authorize_account` response (or the stored per-account `s3_endpoint`), never hard-coded or inferred from region codes.
 - Metadata-based authorization.
 - B2 file-name distribution for high-scale generated names.
 - Durable usage events.
@@ -62,7 +63,7 @@ Customer overlays may not override these without explicit review:
 - No local/frontend counters for billing.
 - Direct B2 listing is not the primary tenant dashboard source.
 - Usage attribution starts with provider account/storage account.
-- Tenants may use the B2 Native API or the S3-compatible API; both are valid against the tenant's customer account. SigV4 only; SSE-KMS, object tagging, IAM roles, and object-level ACLs are not supported by Backblaze's S3 implementation.
+- Tenants may use the B2 Native API or the S3-compatible API; both are valid against the tenant's customer account. SigV4 only; SSE-KMS, object tagging, IAM roles, and object-level ACLs are not supported by Backblaze's S3 implementation (only the bucket-level canned `private`/`public-read` ACLs exist).
 
 ## Configurable defaults
 

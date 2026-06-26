@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-06-06 -->
+<!-- last_verified: 2026-06-09 -->
 # CLAUDE.md — Neocloud/Partner Vibe Kit
 
 ## Purpose
@@ -56,9 +56,10 @@ Use `docs/source-of-truth.md` to resolve conflicts. In short: golden rules here,
 - Partner API integration must be abstracted so local development can use a mock provider.
 - Never hardcode production credentials, account IDs, customer data, bucket IDs, tokens, or secrets.
 - The platform's own control plane and platform-mediated data plane use the B2 Native API and Partner API. The S3-compatible API is offered to tenants as an alternative interface to their own data — tenants use the same B2 application key as an AWS-style access key/secret via SigV4. See `docs/s3-compatible-api.md` and `docs/adr/008-b2-native-vs-s3-compatible.md`.
-- Backblaze's S3-compatible API supports SigV4 only (not SigV2), SSE-B2 and SSE-C (not SSE-KMS), and no object tagging / no IAM roles / no website configuration / no object-level ACLs. Do not design workflows that depend on the unsupported features.
+- Backblaze's S3-compatible API supports SigV4 only (not SigV2), SSE-B2 and SSE-C (not SSE-KMS), and no object tagging / no IAM roles / no website configuration / no object-level ACLs (only the bucket-level canned `private`/`public-read` ACLs). Do not design workflows that depend on the unsupported features.
 - **Least privilege everywhere.** Every credential is scoped to the minimum capabilities required for its workload. Default tenant capabilities: `listFiles, readFiles, writeFiles, shareFiles` (add `deleteFiles` only when needed).
-- **The operator master application key is for the platform's control plane only.** It must never be used as a tenant credential or configured into any S3 client. Backblaze does not restrict the master key from the S3 API at the protocol level — the restriction is a platform policy you enforce. A leaked master key in an S3 config file compromises every provisioned customer account.
+- **The operator master application key is for the platform's control plane only.** It must never be used as a tenant credential or configured into any S3 client. Backblaze rejects the master key at the S3 protocol level — S3 requests signed with it fail to authenticate, so it cannot be an S3 credential. It must never appear in an S3 config regardless: a leaked master key compromises every provisioned customer account via the Partner/native API.
+- **Never hard-code or infer Backblaze endpoints.** Authorize once at the fixed endpoint `https://api.backblazeb2.com/b2api/v4/b2_authorize_account`, then read `apiInfo.storageApi.apiUrl` (B2 Native base URL), `.downloadUrl` (downloads), and `.s3ApiUrl` (S3-compatible, when needed) from the response, and send the returned `authorizationToken` on subsequent calls. Re-authorize when the token expires or a request reports the authorization is no longer valid. Never construct `apiNNN`/`fNNN`/`s3.<region>` URLs by hand or infer region from bucket names, account IDs, application keys, or previously seen URLs — the authorize response is the source of truth. See `docs/common-pitfalls.md` §24.
 
 For the "don't" side of these rules — concrete wrong patterns, why they're wrong, and what to do instead — see `docs/common-pitfalls.md`. Use it as a PR review aid alongside `docs/quality-gates.md`.
 

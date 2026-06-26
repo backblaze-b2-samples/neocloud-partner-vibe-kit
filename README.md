@@ -7,17 +7,46 @@ A Claude-ready implementation guide for Backblaze partners building a B2-backed 
 
 This is **not** a simple upload/list/download app and it is **not** a finished production platform. It is a reference package that helps Claude and engineers build the platform correctly, incrementally, and with tests.
 
-## See it work in 5 minutes
+## Getting started
 
-Want to watch the kit's core invariants (distribution_id naming, durable usage events, metadata-based browsing, presigned download) run against a real B2 bucket before building anything? Run the concept demo:
+You build the platform incrementally by running **one Claude prompt per PR** (12 PRs, in order). Before building anything, run the concept demo to watch the kit's core invariants work against a real bucket.
+
+### Prerequisites
+
+- A Backblaze B2 account and a **throwaway** bucket — the demo writes and then deletes test objects.
+- A B2 application key scoped to that bucket with **read + write + delete**. Never use the operator master key here (Backblaze rejects it at the S3 layer anyway).
+- **Python 3.9+** to run the concept demo.
+- **Claude Code** (or the Claude app) to run the PR prompts that build the platform.
+
+### Step 1 — See it work (install + run the concept demo)
 
 ```bash
-cp .env.example .env          # fill in a THROWAWAY bucket's B2 key
+cp .env.example .env          # then fill in your THROWAWAY bucket's B2 key
 pip install -r quickstart/requirements.txt
 python quickstart/quickstart.py
 ```
 
-It writes under a unique prefix and cleans up after itself. See [`quickstart/README.md`](quickstart/README.md). The demo is a *learning artifact*, not the platform — build that with the PR prompts.
+One command exercises four hard invariants — distribution_id-first naming, durable usage events, metadata-based browsing, and presigned download — against your bucket, then cleans up everything it wrote (objects under a unique prefix + a temp SQLite ledger). Expected output ends with a usage summary and `cleaned up …`. See [`quickstart/README.md`](quickstart/README.md). The demo is a *learning artifact*, not the platform.
+
+### Step 2 — Build your first project (PR 1, the foundation)
+
+The demo is throwaway; PR 1 is the real first deliverable. In a fresh Claude session opened in this repo:
+
+1. Paste the contents of [`prompts/pr1-foundation.md`](prompts/pr1-foundation.md).
+2. Claude follows the prompt's required reading — `START_HERE.md` → `CLAUDE.md` golden rules → `context-packs/foundation.context.md` → `docs/data-model.md` — then implements the multi-tenant data model, demo mode, and the B2 file-name builder.
+3. Check the result against [`examples/expected-pr-outputs.md`](examples/expected-pr-outputs.md) ("what good looks like" for each PR), then move on to PR 2.
+
+Implement PRs in order — each one builds the foundation the next assumes.
+
+### A few example "first projects"
+
+| Goal | What to run | Notes |
+|---|---|---|
+| Stand up the data model and auth | `prompts/pr1-foundation.md`, then `prompts/pr2-auth-rbac-api-keys.md` | The minimum to have tenants, projects, RBAC, and audit events. |
+| Add resilient uploads + downloads | `prompts/pr3-parallel-resilient-uploads.md`, then `prompts/pr4-download-presigned-urls.md` | Multipart, retry, concurrency, abort; presigned URLs and range reads. Requires PRs 1–2. |
+| Tailor the build to a workload | Copy `customer-overlays/customer-profile.example-ai-training.yaml` to `customer-profile.yaml`, then run a PR prompt | Overlays set concurrency, bucket layout, report format, etc. They can override configurable defaults but never the hard invariants in `docs/source-of-truth.md`. |
+
+To save tokens, tell Claude "minimal context mode" — it then loads only `START_HERE.md`, `CLAUDE.md`, and the one prompt. See `START_HERE.md`.
 
 ## Start here
 

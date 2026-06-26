@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-06-06 -->
+<!-- last_verified: 2026-06-09 -->
 # Expected PR Outputs
 
 A "what good looks like" reference for each of the 12 roadmap PRs. Use it to
@@ -75,7 +75,7 @@ metadata-ownership check **before** signing, optional range support.
 
 **Golden output:**
 ```json
-{ "url": "https://s3.us-west-004.backblazeb2.com/bucket/7f/tenants/…?X-Amz-…",
+{ "url": "https://s3.{region}.backblazeb2.com/bucket/7f/tenants/…?X-Amz-…",
   "expires_at": "2026-05-21T12:05:00Z" }
 ```
 The platform returns a presigned URL; tenants fetch bytes directly from B2 (no
@@ -168,7 +168,7 @@ API); mock provider works offline; alias maps to `memberEmail`.
 { "id": "sa_001", "tenant_id": "tnt_123", "region": "us-west",
   "alias": "cust_12345-us-west@storage.example-neocloud.com",
   "provider_member_email": "cust_12345-us-west@storage.example-neocloud.com",
-  "s3_endpoint": "s3.us-west-004.backblazeb2.com", "status": "active" }
+  "s3_endpoint": "s3.{region}.backblazeb2.com", "status": "active" }
 ```
 
 **Acceptance signal:** Partner API + Group prerequisites documented; existing

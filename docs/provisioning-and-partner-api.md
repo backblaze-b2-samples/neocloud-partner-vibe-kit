@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-06-06 -->
+<!-- last_verified: 2026-06-09 -->
 # Provisioning and Partner API
 
 > Term definitions (Partner API, Group, alias/memberEmail, eject, storage account, etc.) are in `docs/glossary.md`. The operator-side prerequisite steps (getting Partner API enabled by Backblaze, creating Groups in the website) are in `docs/first-time-operator-setup.md`.
@@ -24,7 +24,7 @@ A B2 customer account lives in a pre-defined Partner API region. If a customer n
 
 Partner API region inputs should use Partner API region codes such as `us-east`, `us-west`, `ca-east`, and `eu-central`. Do not pass S3 endpoint/cluster labels such as `us-west-004` as Partner API `region` values. Store S3 endpoint or cluster metadata separately when needed.
 
-The Partner API response for a successful customer account creation includes the S3 endpoint host for that account (e.g., `s3.us-west-004.backblazeb2.com`). Capture this in `storage_accounts.s3_endpoint` at provisioning time — it cannot be inferred reliably from the region code alone, and it is what tenants need to configure S3 clients. See `docs/s3-compatible-api.md` §Region Values.
+The Partner API response for a successful customer account creation includes the S3 endpoint host for that account (e.g., `s3.{region}.backblazeb2.com`). Capture this in `storage_accounts.s3_endpoint` at provisioning time — it cannot be inferred reliably from the region code alone, and it is what tenants need to configure S3 clients. See `docs/s3-compatible-api.md` §Region Values.
 
 ## Customer account alias and `memberEmail`
 
@@ -81,6 +81,8 @@ Do not couple product logic directly to raw API calls. Keep a thin Backblaze Par
 ### Thin Backblaze Partner API adapter
 
 Only expose operations that correspond to documented Backblaze API calls or returned API endpoints.
+
+> **API version.** Partner API operations use the `/b2api/v3/` path against the `groupsApiUrl` returned by `b2_authorize_account` (v4). Storage / B2 Native operations use `/b2api/v4/`. The two surfaces are versioned independently — do not "upgrade" Partner calls to v4. See `docs/s3-compatible-api.md` §Endpoint discovery.
 
 ```text
 BackblazePartnerApiClient

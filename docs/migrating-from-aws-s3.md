@@ -1,5 +1,5 @@
 ---
-last_verified: 2026-06-06
+last_verified: 2026-06-09
 status: reference
 load_when:
   - a tenant or partner is bringing existing AWS S3 tooling or code to B2
@@ -40,11 +40,12 @@ account — see `docs/adr/008-b2-native-vs-s3-compatible.md`.
 
 ## 1. Endpoint, region, and credentials
 
-- **Endpoint:** `https://s3.<region>.backblazeb2.com`, e.g.
-  `https://s3.us-west-004.backblazeb2.com`. Find the exact host on the bucket's
-  details page; the platform records it on `storage_accounts.s3_endpoint`.
-- **Region label:** the middle segment, e.g. `us-west-004`. Use it verbatim as
-  the SDK `region`. It is distinct from the Partner API region code.
+- **Endpoint:** `https://s3.<your-region>.backblazeb2.com`. Find the exact host
+  on the bucket's details page; the platform records it on
+  `storage_accounts.s3_endpoint`. Use that value — don't hand-build it.
+- **Region label:** the middle segment of that host (read from your provisioned
+  endpoint, not guessed). Use it verbatim as the SDK `region`. It is distinct
+  from the Partner API region code.
 - **Credentials:** the tenant's B2 application key pair maps directly —
   `applicationKeyId` is the AWS **access key id**, `applicationKey` is the AWS
   **secret access key**. No separate AWS-style credential is provisioned. The
@@ -222,8 +223,8 @@ from botocore.config import Config
 
 s3 = boto3.client(
     "s3",
-    endpoint_url="https://s3.us-west-004.backblazeb2.com",
-    region_name="us-west-004",
+    endpoint_url="https://s3.<your-region>.backblazeb2.com",  # from storage_accounts.s3_endpoint
+    region_name="<your-region>",                              # the endpoint label, not guessed
     aws_access_key_id=APPLICATION_KEY_ID,      # B2 keyID
     aws_secret_access_key=APPLICATION_KEY,     # B2 applicationKey
     config=Config(signature_version="s3v4"),   # SigV4 is the only required override
@@ -235,17 +236,17 @@ s3 = boto3.client(
 **AWS CLI**
 ```bash
 aws configure set default.s3.signature_version s3v4
-aws --endpoint-url https://s3.us-west-004.backblazeb2.com \
+aws --endpoint-url https://s3.<your-region>.backblazeb2.com \
     s3 ls s3://my-bucket/
 ```
 
 **rclone** — either the S3 backend (`provider = Other`,
-`endpoint = s3.us-west-004.backblazeb2.com`, SigV4) or rclone's **native `b2`
+`endpoint = s3.<your-region>.backblazeb2.com`, SigV4) or rclone's **native `b2`
 backend** (uses keyID/applicationKey directly).
 
 **MinIO `mc`**
 ```bash
-mc alias set b2 https://s3.us-west-004.backblazeb2.com KEYID APPKEY --api S3v4
+mc alias set b2 https://s3.<your-region>.backblazeb2.com KEYID APPKEY --api S3v4
 ```
 
 **Cyberduck / S3-aware analytics tools** — set the S3 endpoint host to the
@@ -257,8 +258,9 @@ Provisioning a tenant for S3 access is a standard flow — see
 ## 8. What NOT to do (migration edition)
 
 - **Don't paste the operator master key** into a boto3 config or
-  `~/.aws/credentials` to "quickly test." It is not restricted from S3 at the
-  protocol level, so a leak compromises every customer account
+  `~/.aws/credentials` to "quickly test." Backblaze's S3 API rejects it, so the
+  test fails to authenticate; and regardless, a master-key leak compromises every
+  customer account via the Partner/native API
   (`docs/common-pitfalls.md` §23, `CLAUDE.md` golden rules).
 - **Don't trust ETag as MD5** for integrity (see §4).
 - **Don't carry over timestamp/sequential/tenant-prefixed keys** — they create
