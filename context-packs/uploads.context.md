@@ -14,9 +14,9 @@ source_of_truth:
 Parallel, resilient, high-throughput uploads.
 
 ## Core rules
-- <100 MB: single upload.
-- >=100 MB: multipart.
-- 100 MB default part size.
+- Single upload up to 5 GB; >5 GB MUST be multipart (Backblaze hard limit).
+- Default threshold 100 MB (tunable, kit default — not a B2 rule): <100 MB single, >=100 MB multipart.
+- 100 MB default part size — prefer `recommendedPartSize` from `b2_authorize_account`.
 - 5 MB minimum part except final.
 - 5 GB max part.
 - 10,000 part limit.

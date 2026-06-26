@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-06-09 -->
+<!-- last_verified: 2026-06-26 -->
 # Glossary
 
 Terms used across the Neocloud/Partner Vibe Kit. When a term has both a Neocloud-specific meaning and a Backblaze-side meaning, both are listed.
@@ -65,7 +65,7 @@ For canonical entity definitions (columns, relationships), see `docs/data-model.
 - **`memberEmail`** — Backblaze Partner API field on `b2_create_group_member`. The neocloud alias maps directly to this field.
 - **Metadata-based authorization** — Authorization decisions are made from trusted database metadata (e.g., `tenant_id`, `project_id`, ownership joins) and the authenticated session — never from bucket names, B2 file-name parsing, or client-supplied identifiers.
 - **Mock provider** — In-memory implementation of `NeocloudStorageProvider` used in local development and tests. Selected when `STORAGE_PROVIDER=mock` or `NODE_ENV=test`. Does not call Backblaze.
-- **Multipart upload** — B2 Large File API flow: `b2_start_large_file` → many `b2_upload_part` → `b2_finish_large_file`. Required for files ≥ 100 MB. State persisted in `upload_sessions` and `upload_parts`.
+- **Multipart upload** — B2 Large File API flow: `b2_start_large_file` → many `b2_upload_part` → `b2_finish_large_file`. Mandatory above 5 GB (Backblaze's single-upload ceiling); the kit defaults to multipart at ≥ 100 MB, a tunable threshold. State persisted in `upload_sessions` and `upload_parts`.
 
 ## N
 

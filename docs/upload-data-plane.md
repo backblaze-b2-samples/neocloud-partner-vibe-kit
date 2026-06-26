@@ -1,5 +1,5 @@
 ---
-last_verified: 2026-06-06
+last_verified: 2026-06-26
 status: reference
 source_of_truth_for:
   - upload thresholds
@@ -27,23 +27,24 @@ See `docs/s3-compatible-api.md` for the S3 alternative, including the equivalent
 
 ## Decision tree
 
-- Files smaller than 100 MB use normal single-object upload.
-- Files >= 100 MB use multipart upload.
+- **Hard limit (Backblaze):** a single `b2_upload_file` (or S3 `PutObject`) accepts **up to 5 GB**. Files **larger than 5 GB must** use the Large File / multipart API — this is the only Backblaze-imposed threshold. See [Backblaze: Create Large Files with the Native API](https://www.backblaze.com/docs/cloud-storage-create-large-files-with-the-native-api).
+- **Kit default (tunable):** switch to multipart at **100 MB**. Files smaller than 100 MB use a single-object upload; files at or above 100 MB use multipart. This is a chosen default that favors resumability and parallelism well before the 5 GB ceiling — **not** a Backblaze requirement. It is configurable per deployment (`UPLOAD_MULTIPART_THRESHOLD_BYTES`; see `docs/configuration-reference.md`).
 - Prefer objects of at least 1 MB when practical, but do not reject smaller files globally.
 
 Do not confuse:
 
 - 1 MB: preferred minimum object-size guideline when practical.
 - 5 MB: minimum multipart part size except final part.
-- 100 MB: multipart upload threshold and default part-size guideline.
+- 100 MB: the kit's **default** multipart threshold and default part size (tunable).
+- 5 GB: Backblaze's **hard** maximum for a single (non-multipart) upload, and the maximum size of one part.
 
 ## Multipart defaults
 
-- Default part size: 100 MB.
+- Default part size: 100 MB. Prefer the `recommendedPartSize` value returned by `b2_authorize_account` over hardcoding 100 MB; Backblaze recommends 100 MB as the value that balances throughput against parallelism, but the authorize response is the source of truth and may change.
 - Minimum part size: 5 MB except final part.
 - Maximum part size: 5 GB.
 - Maximum parts: 10,000.
-- Adaptive part size for very large files, rounded to nearest 5 MB.
+- Adaptive part size for very large files, rounded to nearest 5 MB. (A large file has at least 2 parts, so a deployment that lowers the threshold below the part size should also shrink the part size to keep multipart meaningful.)
 - Per-file part concurrency: 4.
 - Batch file concurrency: 3.
 - Global in-flight upload requests: 10.
@@ -87,7 +88,7 @@ For small-file-heavy workloads, prefer batching, packing, or concatenating logic
 ## Tests
 
 - Multiple files upload with bounded concurrency.
-- Multipart threshold works at 100 MB.
+- Multipart triggers at the configured threshold (default 100 MB) and is mandatory above 5 GB.
 - Part size respects min/max/10,000-part rules.
 - Retry/backoff handles transient failures.
 - Validation/auth errors are not retried.
