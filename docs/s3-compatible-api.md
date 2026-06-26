@@ -196,7 +196,7 @@ Multipart part-size requirements:
 ### Encryption
 
 - **SSE-B2** — Backblaze-managed keys, enabled per-bucket via PutBucketEncryption or per-request.
-- **SSE-C** — Customer-managed keys, supplied per-request via `x-amz-server-side-encryption-customer-*` headers. The `keyMd5` variable in the Postman environment is the base64-encoded MD5 of the customer key.
+- **SSE-C** — Customer-managed keys, supplied per-request via `x-amz-server-side-encryption-customer-*` headers, including a `keyMd5` header that is the base64-encoded MD5 of the customer key.
 - **SSE-KMS** — **Not supported.** Do not design workflows that depend on SSE-KMS.
 
 ### Versioning
@@ -274,7 +274,7 @@ Provided per-request via headers:
 - `x-amz-server-side-encryption-customer-key: <base64 of the 256-bit key>`
 - `x-amz-server-side-encryption-customer-key-MD5: <base64 of MD5 of the raw key>`
 
-The `keyMd5` variable in the S3 Postman environment corresponds to the third header. The customer is responsible for retaining the key; lose the key and the object is unreadable.
+The third header is the base64-encoded MD5 of the raw key. The customer is responsible for retaining the key; lose the key and the object is unreadable.
 
 ### Mixed encryption in the same bucket
 
@@ -314,5 +314,4 @@ The reconciliation job (compare `usage_events` vs `usage_import_rows`) will show
 - `docs/security-and-tenant-isolation.md` — S3 credential scoping is the same B2 key scope.
 - `docs/common-pitfalls.md` — S3-specific pitfalls (SigV2, SSE-KMS, object tagging).
 - `docs/adr/008-b2-native-vs-s3-compatible.md` — decision rationale.
-- `postman/Backblaze B2 Cloud Storage S3 Compatible API.postman_collection.json` — request/response examples.
-- `postman/s3-example.postman_environment.json`, `postman/s3-local.postman_environment.json` — environment templates.
+- Backblaze's public Postman workspace (<https://www.postman.com/backblaze/backblaze/overview>) — S3-compatible request/response examples.

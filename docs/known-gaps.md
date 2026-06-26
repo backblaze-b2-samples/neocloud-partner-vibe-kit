@@ -47,13 +47,13 @@ The kit reflects Backblaze Partner API guidance as understood at the time of wri
 
 ---
 
-## 4. Postman Collection Is Candidate Material
+## 4. Postman Is Reference Material Only
 
-`postman/Backblaze_B2_Postman_Collection_CORRECTED_v3.json` is a candidate B2 Native API reference. It is not the target neocloud application API contract. It has not been independently validated against the live Backblaze API in this kit.
+The kit no longer bundles a Postman collection. For B2 Native, Partner, and S3-compatible API requests, use Backblaze's public Postman workspace (<https://www.postman.com/backblaze/backblaze/overview>).
 
-**Impact:** Postman should be used for B2 API familiarity and request-shape reference only. It must not be used as a source-of-truth for the target neocloud platform API.
+**Impact:** Postman should be used for B2 API familiarity and request-shape reference only. It must not be used as a source-of-truth for the target neocloud platform API — that is `docs/api-contracts.md`.
 
-**To close:** Run the Postman review checklist in `postman/README.md` against the live Backblaze API and a sandbox operator account.
+**To close:** N/A — this is a standing constraint, not a gap to close.
 
 ---
 

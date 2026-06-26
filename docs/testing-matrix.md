@@ -33,10 +33,6 @@ you build with the kit.
 | Usage | provider account-first attribution | mapped to storage_account first | unit | P0 |
 | Usage | unknown account/bucket | unattributed row | unit | P0 |
 | Billing | export from ledger | deterministic | unit/integration | P1 |
-| Postman | corrected collection JSON validates | valid JSON | static | P0 |
-| Postman | b2-native env includes collection variables | all variables represented | static | P0 |
-| Postman | S3-compatible collection JSON validates | valid JSON | static | P0 |
-| Postman | s3-example env includes collection variables (applicationKeyId, applicationKey, region, keyMd5) | all variables represented | static | P0 |
 | S3 API | tenant provider key works as AWS SigV4 credential against `s3.{region}.backblazeb2.com` | authenticated request succeeds | integration/mock | P0 |
 | S3 API | SigV2 request rejected | 4xx error returned | integration/mock | P1 |
 | S3 API | master application key never used as S3 credential by any tenant code path | grep over CI/configs/test fixtures returns empty | static/security | P0 |
