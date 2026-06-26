@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-06-09 -->
+<!-- last_verified: 2026-06-26 -->
 # CLAUDE.md — Neocloud/Partner Vibe Kit
 
 ## Purpose
@@ -87,9 +87,9 @@ Make these configurable: portal workflow, report format, quota policy, bucket la
 
 ## Upload defaults
 
-- Normal single-object upload for files smaller than 100 MB.
-- Multipart upload for files >= 100 MB.
-- Default multipart part size: 100 MB.
+- Single (non-multipart) upload accepts up to 5 GB; **above 5 GB, multipart is mandatory** (Backblaze hard limit). Below 5 GB the single-vs-multipart choice is the kit's, not Backblaze's.
+- Default multipart threshold: 100 MB — single-object upload below it, multipart at or above it. This is a **tunable default** (favoring resumability/parallelism), not a Backblaze requirement.
+- Default multipart part size: 100 MB, but **prefer `recommendedPartSize` from `b2_authorize_account`** over hardcoding it.
 - Minimum multipart part size: 5 MB except final part.
 - Maximum part size: 5 GB.
 - Maximum parts: 10,000.
