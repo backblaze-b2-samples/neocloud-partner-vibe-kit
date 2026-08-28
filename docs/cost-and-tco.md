@@ -1,5 +1,5 @@
 ---
-last_verified: 2026-06-06
+last_verified: 2026-08-28
 status: reference
 load_when:
   - building the business case for a B2-backed offering
@@ -16,7 +16,7 @@ works if you understand what Backblaze charges *you* and can attribute it to the
 customers *you* charge. This doc gives the cost model, maps the kit's design
 decisions to cost, and shows where the billing layer (PRs 5–7) closes the loop.
 
-> **Pricing figures below were captured 2026-06-06.** They move — treat the
+> **Pricing figures below were captured 2026-08-28.** They move — treat the
 > live page as authoritative: <https://www.backblaze.com/cloud-storage/pricing>
 > and <https://www.backblaze.com/cloud-storage/transaction-pricing>. The cost
 > *model* and *levers* in this doc don't go stale; the dollar figures might.
@@ -35,11 +35,20 @@ attribution exist precisely so B2's per-account usage maps cleanly to a tenant.
 
 ## The three B2 cost dimensions
 
-| Dimension | Rate (as of 2026-06-06) | Notes |
+| Dimension | Rate (as of 2026-08-28) | Notes |
 |-----------|-------------------------|-------|
-| **Storage** | **$0.005 / GB-month** (~$6 / TB-month) | Billed on byte-hours, so deleting/expiring data lowers it immediately |
+| **Storage** | **$6.95 / TB-month** | Billed on byte-hours, so deleting/expiring data lowers it immediately. First 10 GB free |
 | **Egress** | **Free up to 3× average monthly storage**, then **$0.01 / GB** | **Free, unlimited** egress to/through partner CDNs/compute (Fastly, Cloudflare, bunny.net, CacheFly, CoreWeave, Equinix Metal, Vultr, phoenixNAP) |
-| **Transactions** | **Class A: free.** Class B: 2,500/day free, then $0.004/10,000. Class C: 2,500/day free, then $0.004/1,000 | Per-object operations — this is where **small-file workloads quietly cost money** |
+| **Transactions** | **Class A, B and C: free.** Class D: 2,500/day free, then $0.004/10,000 | Per-object operations. Class B and C became free — see the note below, because this changes the shape of the cost argument |
+
+> **Changed since the previous revision.** Class B and Class C transactions used
+> to be metered beyond a 2,500/day free allowance, and this document previously
+> said so. They are now free, and only Class D is metered. That is not a
+> rounding change: it removes transactions as a cost lever for most workloads and
+> **inverts the conclusion of the worked example below**, which used to show
+> transactions dominating. Packing small files is still strongly recommended —
+> but now for throughput and request-rate reasons, not to avoid a bill. See
+> `docs/small-file-and-throughput-guidance.md`.
 
 High-volume options (via sales): **B2 Overdrive** (high-throughput) at $15/TB-month
 with unlimited free egress; **B2 Reserve** capacity bundles (20 TB+, 1–3 yr,
@@ -56,7 +65,7 @@ cost levers, not just correctness rules:
 
 | Kit decision | Cost dimension | Effect |
 |--------------|----------------|--------|
-| **Small-file packing** (ADR 006, `small-file-and-throughput-guidance.md`) | Transactions | Packing many small files into larger segment objects collapses Class B/C transaction counts — the single biggest avoidable cost for small-object workloads |
+| **Small-file packing** (ADR 006, `small-file-and-throughput-guidance.md`) | Throughput, not cost | Class A/B/C are free, so packing no longer avoids a transaction bill. It still matters: it keeps a workload throughput-bound rather than request-bound, and away from request-rate ceilings |
 | **Lifecycle expiration** (`migrating-from-aws-s3.md` §6b) | Storage | Expiring/deleting stale versions drops byte-hours immediately; pair `Expiration{Days}` with the delete-marker rule B2 requires |
 | **Presigned download + CDN** | Egress | Route tenant downloads through a partner CDN (Cloudflare/Fastly/bunny.net/…) for **$0 egress** — decisive for serving/inference workloads |
 | **Provider-account-first usage attribution** (ADR 003) | All | Maps B2's per-account usage CSV to a tenant, so each tenant's storage/egress/transactions can be costed and charged |
@@ -69,20 +78,28 @@ A partner tenant with **50 TB stored**, **30 TB egress/month**, **40M Class B +
 5M Class C** transactions/month:
 
 ```
-storage      50,000 GB × $0.005                         = $250.00
-egress       free up to 3×50TB = 150TB; 30TB < 150TB     =   $0.00   (or $0 via CDN)
-class B      ~40M − (2,500/day×30) free ≈ 40M billable
-             40,000,000 / 10,000 × $0.004                = $16.00
-class C      ~5M billable / 1,000 × $0.004               = $20.00
-                                                          --------
-B2 cost to the partner for this tenant                   ≈ $286 / month
+storage      50 TB × $6.95                               = $347.50
+egress       free up to 3×50TB = 150TB; 30TB < 150TB      =   $0.00   (or $0 via CDN)
+class B      free                                         =   $0.00
+class C      free                                         =   $0.00
+                                                           --------
+B2 cost to the partner for this tenant                    ≈ $348 / month
 ```
 
 If the partner charges this tenant, say, **$10/TB-month for 50 TB = $500**, the
-gross margin is **~$214/tenant/month (~43%)** before the partner's own compute,
-support, and platform costs. Note how **transactions, not storage, are the swing
-factor** here — which is exactly why the packing guidance matters. (Numbers
-illustrative; recompute against current rates.)
+gross margin is **~$152/tenant/month (~30%)** before the partner's own compute,
+support, and platform costs.
+
+**Storage is now the swing factor.** In the previous revision of this document,
+transactions contributed $36 of a $286 bill and the guidance was to pack small
+files to control that cost. With Class B and C free, that is no longer true: the
+bill is storage, and the levers that move it are lifecycle expiration and
+deleting stale versions — both of which take effect immediately, since storage
+is billed on byte hours.
+
+Pack small files anyway. The reason is now throughput and request-rate
+behaviour rather than the invoice. (Numbers illustrative; recompute against
+current rates.)
 
 ## Closing the loop: from cost to invoice
 
